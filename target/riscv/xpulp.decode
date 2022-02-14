@@ -1,0 +1,67 @@
+#
+# RISC-V translation routines for the XPulp Instruction Set.
+#
+# Copyright (c) 2021-2022 PLCT Lab.
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms and conditions of the GNU General Public License,
+# version 2 or later, as published by the Free Software Foundation.
+#
+# This program is distributed in the hope it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+# more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# Fields
+%rs2  20:5
+%rs1  15:5
+%rd    7:5
+
+# immediates:
+%imm_i    20:s12
+%imm_s    25:s7 7:5
+
+# Argument sets
+&i       imm rs1 rd      !extern
+&r       rd  rs1 rs2     !extern
+&s       imm rs1 rs2     !extern
+
+# Formats
+@i         ............   ..... ... .....  ....... &i      imm=%imm_i      %rs1 %rd
+@r         .......  ..... ..... ... .....  ....... &r                 %rs2 %rs1 %rd
+@s         .......  ..... ..... ... .....  ....... &s      imm=%imm_s %rs2 %rs1
+
+# *** Post-Incrementing Load & Store Instructions ***
+cv_lb_ripi   ............   ..... 000 ..... 0001011  @i
+cv_lbu_ripi  ............   ..... 100 ..... 0001011  @i
+cv_lh_ripi   ............   ..... 001 ..... 0001011  @i
+cv_lhu_ripi  ............   ..... 101 ..... 0001011  @i
+cv_lw_ripi   ............   ..... 010 ..... 0001011  @i
+
+cv_lb_rrpi   0000000 .....  ..... 011 ..... 0101011  @r
+cv_lbu_rrpi  0001000 .....  ..... 011 ..... 0101011  @r
+cv_lh_rrpi   0000001 .....  ..... 011 ..... 0101011  @r
+cv_lhu_rrpi  0001001 .....  ..... 011 ..... 0101011  @r
+cv_lw_rrpi   0000010 .....  ..... 011 ..... 0101011  @r
+
+cv_sb_ripi   ....... .....  ..... 000 ..... 0101011  @s
+cv_sh_ripi   ....... .....  ..... 001 ..... 0101011  @s
+cv_sw_ripi   ....... .....  ..... 010 ..... 0101011  @s
+
+cv_sb_rrpi   0010000 .....  ..... 011 ..... 0101011  @r
+cv_sh_rrpi   0010001 .....  ..... 011 ..... 0101011  @r
+cv_sw_rrpi   0010010 .....  ..... 011 ..... 0101011  @r
+
+# *** Register-Register Load & Store Instructions ***
+cv_lb_rr     0000100 .....  ..... 011 ..... 0101011  @r
+cv_lbu_rr    0001100 .....  ..... 011 ..... 0101011  @r
+cv_lh_rr     0000101 .....  ..... 011 ..... 0101011  @r
+cv_lhu_rr    0001101 .....  ..... 011 ..... 0101011  @r
+cv_lw_rr     0000110 .....  ..... 011 ..... 0101011  @r
+
+cv_sb_rr     0010100 .....  ..... 011 ..... 0101011  @r
+cv_sh_rr     0010101 .....  ..... 011 ..... 0101011  @r
+cv_sw_rr     0010110 .....  ..... 011 ..... 0101011  @r

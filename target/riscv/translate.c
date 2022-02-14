@@ -140,6 +140,11 @@ static bool has_xthead_p(DisasContext *ctx  __attribute__((__unused__)))
            ctx->cfg_ptr->ext_xtheadmempair || ctx->cfg_ptr->ext_xtheadsync;
 }
 
+static bool has_xpulp_p(DisasContext *ctx  __attribute__((__unused__)))
+{
+    return ctx->cfg_ptr->ext_xcvmem;
+}
+
 #define MATERIALISE_EXT_PREDICATE(ext)  \
     static bool has_ ## ext ## _p(DisasContext *ctx)    \
     { \
@@ -608,6 +613,25 @@ static TCGv get_address_indexed(DisasContext *ctx, int rs1, TCGv offs)
     tcg_gen_add_tl(addr, src1, offs);
     if (ctx->pm_mask_enabled) {
         tcg_gen_andc_tl(addr, addr, pm_mask);
+    } else if (get_xl(ctx) == MXL_RV32) {
+        tcg_gen_ext32u_tl(addr, addr);
+    }
+    if (ctx->pm_base_enabled) {
+        tcg_gen_or_tl(addr, addr, pm_base);
+    }
+    return addr;
+}
+
+/* Compute a canonical address from a register plus register. */
+static TCGv get_address_rr(DisasContext *ctx, int rs1, int rs2)
+{
+    TCGv addr = temp_new(ctx);
+    TCGv src1 = get_gpr(ctx, rs1, EXT_NONE);
+    TCGv src2 = get_gpr(ctx, rs2, EXT_NONE);
+
+    tcg_gen_add_tl(addr, src1, src2);
+    if (ctx->pm_mask_enabled) {
+        tcg_gen_and_tl(addr, addr, pm_mask);
     } else if (get_xl(ctx) == MXL_RV32) {
         tcg_gen_ext32u_tl(addr, addr);
     }
@@ -1112,6 +1136,10 @@ static uint32_t opcode_at(DisasContextBase *dcbase, target_ulong pc)
 #include "insn_trans/trans_xthead.c.inc"
 #include "insn_trans/trans_xventanacondops.c.inc"
 
+/* Include decoders for Xpulp extensions */
+#include "decode-xpulp.c.inc"
+#include "insn_trans/trans_xpulp.c.inc"
+
 /* Include the auto-generated decoder for 16 bit insn */
 #include "decode-insn16.c.inc"
 /* Include decoders for factored-out extensions */
@@ -1136,6 +1164,7 @@ static void decode_opc(CPURISCVState *env, DisasContext *ctx, uint16_t opcode)
         bool (*decode_func)(DisasContext *, uint32_t);
     } decoders[] = {
         { always_true_p,  decode_insn32 },
+        { has_xpulp_p,  decode_xpulp },
         { has_xthead_p, decode_xthead },
         { has_XVentanaCondOps_p,  decode_XVentanaCodeOps },
     };

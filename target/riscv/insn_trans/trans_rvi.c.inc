@@ -219,13 +219,26 @@ static bool trans_bgeu(DisasContext *ctx, arg_bgeu *a)
     return gen_branch(ctx, a, TCG_COND_GEU);
 }
 
-static bool gen_load_tl(DisasContext *ctx, arg_lb *a, MemOp memop)
+static bool gen_load_tl(DisasContext *ctx, arg_lb *a, MemOp memop,
+                        bool postInc)
 {
     TCGv dest = dest_gpr(ctx, a->rd);
-    TCGv addr = get_address(ctx, a->rs1, a->imm);
+    TCGv addr;
+
+    if (postInc) {
+        addr = get_address(ctx, a->rs1, 0);
+    } else {
+        addr = get_address(ctx, a->rs1, a->imm);
+    }
 
     tcg_gen_qemu_ld_tl(dest, addr, ctx->mem_idx, memop);
+
     gen_set_gpr(ctx, a->rd, dest);
+    if (postInc) {
+        TCGv src1 = get_gpr(ctx, a->rs1, EXT_NONE);
+        tcg_gen_addi_tl(src1, src1, a->imm);
+        gen_set_gpr(ctx, a->rs1, src1);
+    }
     return true;
 }
 
@@ -265,7 +278,7 @@ static bool gen_load(DisasContext *ctx, arg_lb *a, MemOp memop)
     if (get_xl(ctx) == MXL_RV128) {
         return gen_load_i128(ctx, a, memop);
     } else {
-        return gen_load_tl(ctx, a, memop);
+        return gen_load_tl(ctx, a, memop, false);
     }
 }
 
@@ -318,11 +331,23 @@ static bool trans_ldu(DisasContext *ctx, arg_ldu *a)
     return gen_load(ctx, a, MO_TEUQ);
 }
 
-static bool gen_store_tl(DisasContext *ctx, arg_sb *a, MemOp memop)
+static bool gen_store_tl(DisasContext *ctx, arg_sb *a, MemOp memop,
+                         bool postInc)
 {
-    TCGv addr = get_address(ctx, a->rs1, a->imm);
     TCGv data = get_gpr(ctx, a->rs2, EXT_NONE);
+    TCGv addr;
 
+    if (postInc) {
+        addr = get_address(ctx, a->rs1, 0);
+    } else {
+        addr = get_address(ctx, a->rs1, a->imm);
+    }
+
+    if (postInc) {
+        TCGv src1 = get_gpr(ctx, a->rs1, EXT_NONE);
+        tcg_gen_addi_tl(src1, src1, a->imm);
+        gen_set_gpr(ctx, a->rs1, src1);
+    }
     tcg_gen_qemu_st_tl(data, addr, ctx->mem_idx, memop);
     return true;
 }
@@ -355,7 +380,7 @@ static bool gen_store(DisasContext *ctx, arg_sb *a, MemOp memop)
     if (get_xl(ctx) == MXL_RV128) {
         return gen_store_i128(ctx, a, memop);
     } else {
-        return gen_store_tl(ctx, a, memop);
+        return gen_store_tl(ctx, a, memop, false);
     }
 }
 
