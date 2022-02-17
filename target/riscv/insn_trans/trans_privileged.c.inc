@@ -20,6 +20,7 @@
 
 static bool trans_ecall(DisasContext *ctx, arg_ecall *a)
 {
+    check_hwlp_body(ctx, HWLP_TYPE_PRIV);
     /* always generates U-level ECALL, fixed in do_interrupt handler */
     generate_exception(ctx, RISCV_EXCP_U_ECALL);
     return true;
@@ -75,6 +76,7 @@ static bool trans_uret(DisasContext *ctx, arg_uret *a)
 static bool trans_sret(DisasContext *ctx, arg_sret *a)
 {
 #ifndef CONFIG_USER_ONLY
+    check_hwlp_body(ctx, HWLP_TYPE_PRIV);
     if (has_ext(ctx, RVS)) {
         decode_save_opc(ctx);
         gen_helper_sret(cpu_pc, cpu_env);
@@ -92,6 +94,7 @@ static bool trans_sret(DisasContext *ctx, arg_sret *a)
 static bool trans_mret(DisasContext *ctx, arg_mret *a)
 {
 #ifndef CONFIG_USER_ONLY
+    check_hwlp_body(ctx, HWLP_TYPE_PRIV);
     decode_save_opc(ctx);
     gen_helper_mret(cpu_pc, cpu_env);
     exit_tb(ctx); /* no chaining */
@@ -105,6 +108,7 @@ static bool trans_mret(DisasContext *ctx, arg_mret *a)
 static bool trans_wfi(DisasContext *ctx, arg_wfi *a)
 {
 #ifndef CONFIG_USER_ONLY
+    check_hwlp_body(ctx, HWLP_TYPE_PRIV);
     decode_save_opc(ctx);
     gen_set_pc_imm(ctx, ctx->pc_succ_insn);
     gen_helper_wfi(cpu_env);
@@ -117,6 +121,7 @@ static bool trans_wfi(DisasContext *ctx, arg_wfi *a)
 static bool trans_sfence_vma(DisasContext *ctx, arg_sfence_vma *a)
 {
 #ifndef CONFIG_USER_ONLY
+    check_hwlp_body(ctx, HWLP_TYPE_MEMORY_ORDER);
     decode_save_opc(ctx);
     gen_helper_tlb_flush(cpu_env);
     return true;

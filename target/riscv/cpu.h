@@ -145,6 +145,22 @@ typedef struct PMUCTRState {
     target_ulong irq_overflow_left;
 } PMUCTRState;
 
+struct RISCVHwlp {
+    target_ulong lpstart;
+    target_ulong lpend;
+    target_ulong lpcount;
+};
+
+typedef struct RISCVHwlp RISCVHwlp;
+
+enum {
+    HWLP_TYPE_RVC,
+    HWLP_TYPE_JUMP_BR,
+    HWLP_TYPE_MEMORY_ORDER,
+    HWLP_TYPE_PRIV,
+    HWLP_TYPE_TARGET_PC,
+};
+
 struct CPUArchState {
     target_ulong gpr[32];
     target_ulong gprh[32]; /* 64 top bits of the 128-bit registers */
@@ -376,6 +392,9 @@ struct CPUArchState {
     target_ulong senvcfg;
     uint64_t henvcfg;
 #endif
+
+    RISCVHwlp hwlp[2];
+
     target_ulong cur_pmmask;
     target_ulong cur_pmbase;
 
@@ -474,6 +493,7 @@ struct RISCVCPUConfig {
     uint64_t mimpid;
 
     /* Vendor-specific custom extensions */
+    bool ext_xcvhwlp;
     bool ext_xcvmem;
     bool ext_xtheadba;
     bool ext_xtheadbb;
@@ -644,6 +664,9 @@ FIELD(TB_FLAGS, VTA, 24, 1)
 FIELD(TB_FLAGS, VMA, 25, 1)
 /* Native debug itrigger */
 FIELD(TB_FLAGS, ITRIGGER, 26, 1)
+
+FIELD(TB_FLAGS, HWLP_ENABLED0, 27, 1)
+FIELD(TB_FLAGS, HWLP_ENABLED1, 28, 1)
 
 #ifdef TARGET_RISCV32
 #define riscv_cpu_mxl(env)  ((void)(env), MXL_RV32)

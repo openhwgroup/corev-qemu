@@ -52,6 +52,7 @@ static bool trans_jalr(DisasContext *ctx, arg_jalr *a)
 {
     TCGLabel *misaligned = NULL;
 
+    check_hwlp_body(ctx, HWLP_TYPE_JUMP_BR);
     tcg_gen_addi_tl(cpu_pc, get_gpr(ctx, a->rs1, EXT_NONE), a->imm);
     tcg_gen_andi_tl(cpu_pc, cpu_pc, (target_ulong)-2);
 
@@ -66,6 +67,7 @@ static bool trans_jalr(DisasContext *ctx, arg_jalr *a)
     }
 
     gen_set_gpri(ctx, a->rd, ctx->pc_succ_insn);
+    check_target_hwlp_body(ctx, cpu_pc);
     lookup_and_goto_ptr(ctx);
 
     if (misaligned) {
@@ -161,6 +163,7 @@ static bool gen_branch(DisasContext *ctx, arg_b *a, TCGCond cond)
     TCGv src1 = get_gpr(ctx, a->rs1, EXT_SIGN);
     TCGv src2 = get_gpr(ctx, a->rs2, EXT_SIGN);
 
+    check_hwlp_body(ctx, HWLP_TYPE_JUMP_BR);
     if (get_xl(ctx) == MXL_RV128) {
         TCGv src1h = get_gprh(ctx, a->rs1);
         TCGv src2h = get_gprh(ctx, a->rs2);
@@ -182,6 +185,8 @@ static bool gen_branch(DisasContext *ctx, arg_b *a, TCGCond cond)
         /* misaligned */
         gen_exception_inst_addr_mis(ctx);
     } else {
+        check_target_hwlp_body(ctx,
+                               tcg_constant_tl(ctx->base.pc_next + a->imm));
         gen_goto_tb(ctx, 0, ctx->base.pc_next + a->imm);
     }
     ctx->base.is_jmp = DISAS_NORETURN;
@@ -838,6 +843,7 @@ static bool trans_pause(DisasContext *ctx, arg_pause *a)
 
 static bool trans_fence(DisasContext *ctx, arg_fence *a)
 {
+    check_hwlp_body(ctx, HWLP_TYPE_MEMORY_ORDER);
     /* FENCE is a full memory barrier. */
     tcg_gen_mb(TCG_MO_ALL | TCG_BAR_SC);
     return true;
@@ -845,6 +851,7 @@ static bool trans_fence(DisasContext *ctx, arg_fence *a)
 
 static bool trans_fence_i(DisasContext *ctx, arg_fence_i *a)
 {
+    check_hwlp_body(ctx, HWLP_TYPE_MEMORY_ORDER);
     if (!ctx->cfg_ptr->ext_ifencei) {
         return false;
     }

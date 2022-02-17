@@ -22,6 +22,12 @@
     }                                     \
 } while (0)
 
+#define REQUIRE_XCVHWLP(ctx) do {         \
+    if (!ctx->cfg_ptr->ext_xcvhwlp) {     \
+        return false;                     \
+    }                                     \
+} while (0)
+
 static bool gen_load_rr_tl(DisasContext *ctx, arg_r *a, MemOp memop,
                            bool postInc)
 {
@@ -211,4 +217,96 @@ static bool trans_cv_sw_rr(DisasContext *ctx, arg_cv_sw_rr *a)
 {
     REQUIRE_XCVMEM(ctx);
     return gen_store_rr_tl(ctx, a, MO_TESL, false);
+}
+
+static bool trans_cv_starti(DisasContext *ctx, arg_cv_starti *a)
+{
+    REQUIRE_XCVHWLP(ctx);
+    target_ulong lpstart = ctx->base.pc_next + (a->imm << 2);
+    TCGv src = tcg_constant_tl(lpstart);
+
+    return do_csrw(ctx, a->l == 0 ? CSR_LPSTART0 : CSR_LPSTART1, src);
+}
+
+static bool trans_cv_start(DisasContext *ctx, arg_cv_start *a)
+{
+    REQUIRE_XCVHWLP(ctx);
+    TCGv src = get_gpr(ctx, a->rs1, EXT_NONE);
+
+    return do_csrw(ctx, a->l == 0 ? CSR_LPSTART0 : CSR_LPSTART1, src);
+}
+
+static bool trans_cv_endi(DisasContext *ctx, arg_cv_endi *a)
+{
+    REQUIRE_XCVHWLP(ctx);
+    target_ulong lpend = ctx->base.pc_next + (a->imm << 2);
+    TCGv src = tcg_constant_tl(lpend);
+
+    return do_csrw(ctx, a->l == 0 ? CSR_LPEND0 : CSR_LPEND1, src);
+}
+
+static bool trans_cv_end(DisasContext *ctx, arg_cv_end *a)
+{
+    REQUIRE_XCVHWLP(ctx);
+    TCGv src = get_gpr(ctx, a->rs1, EXT_NONE);
+
+    return do_csrw(ctx, a->l == 0 ? CSR_LPEND0 : CSR_LPEND1, src);
+}
+
+static bool trans_cv_counti(DisasContext *ctx, arg_cv_counti *a)
+{
+    REQUIRE_XCVHWLP(ctx);
+    TCGv src = tcg_constant_tl(a->imm);
+
+    return do_csrw(ctx, a->l == 0 ? CSR_LPCOUNT0 : CSR_LPCOUNT1, src);
+}
+
+static bool trans_cv_count(DisasContext *ctx, arg_cv_count *a)
+{
+    REQUIRE_XCVHWLP(ctx);
+    TCGv src = get_gpr(ctx, a->rs1, EXT_NONE);
+
+    return do_csrw(ctx, a->l == 0 ? CSR_LPCOUNT0 : CSR_LPCOUNT1, src);
+}
+
+static bool trans_cv_setup(DisasContext *ctx, arg_cv_setup *a)
+{
+    REQUIRE_XCVHWLP(ctx);
+    TCGv start = tcg_constant_tl(ctx->pc_succ_insn);
+    TCGv end = tcg_constant_tl(ctx->base.pc_next + (a->imm << 2));
+    TCGv count = get_gpr(ctx, a->rs1, EXT_NONE);
+    int start_csr = a->l == 0 ? CSR_LPSTART0 : CSR_LPSTART1;
+    int end_csr = a->l == 0 ? CSR_LPEND0 : CSR_LPEND1;
+    int count_csr = a->l == 0 ? CSR_LPCOUNT0 : CSR_LPCOUNT1;
+
+    if (tb_cflags(ctx->base.tb) & CF_USE_ICOUNT) {
+        gen_io_start();
+    }
+
+    gen_helper_csrw(cpu_env, tcg_constant_i32(count_csr), count);
+    gen_helper_csrw(cpu_env, tcg_constant_i32(end_csr), end);
+    gen_helper_csrw(cpu_env, tcg_constant_i32(start_csr), start);
+
+    return do_csr_post(ctx);
+}
+
+static bool trans_cv_setupi(DisasContext *ctx, arg_cv_setupi *a)
+{
+    REQUIRE_XCVHWLP(ctx);
+    TCGv start = tcg_constant_tl(ctx->pc_succ_insn);
+    TCGv end = tcg_constant_tl(ctx->base.pc_next + (a->imms << 2));
+    TCGv count = tcg_constant_tl(a->imm);
+    int start_csr = a->l == 0 ? CSR_LPSTART0 : CSR_LPSTART1;
+    int end_csr = a->l == 0 ? CSR_LPEND0 : CSR_LPEND1;
+    int count_csr = a->l == 0 ? CSR_LPCOUNT0 : CSR_LPCOUNT1;
+
+    if (tb_cflags(ctx->base.tb) & CF_USE_ICOUNT) {
+        gen_io_start();
+    }
+
+    gen_helper_csrw(cpu_env, tcg_constant_i32(count_csr), count);
+    gen_helper_csrw(cpu_env, tcg_constant_i32(end_csr), end);
+    gen_helper_csrw(cpu_env, tcg_constant_i32(start_csr), start);
+
+    return do_csr_post(ctx);
 }

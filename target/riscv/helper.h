@@ -1137,3 +1137,6 @@ DEF_HELPER_FLAGS_1(aes64im, TCG_CALL_NO_RWG_SE, tl, tl)
 
 DEF_HELPER_FLAGS_3(sm4ed, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl)
 DEF_HELPER_FLAGS_3(sm4ks, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl)
+
+/* Hardware Loop Function */
+DEF_HELPER_FLAGS_3(check_hwlp_body, TCG_CALL_NO_RWG, void, env, tl, tl)

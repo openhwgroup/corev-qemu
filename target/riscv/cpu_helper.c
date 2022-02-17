@@ -40,6 +40,11 @@ int riscv_cpu_mmu_index(CPURISCVState *env, bool ifetch)
 #endif
 }
 
+inline bool is_same_page(target_ulong addr1, target_ulong addr2)
+{
+    return (addr1 & TARGET_PAGE_MASK) == (addr2 & TARGET_PAGE_MASK);
+}
+
 void cpu_get_tb_cpu_state(CPURISCVState *env, target_ulong *pc,
                           target_ulong *cs_base, uint32_t *pflags)
 {
@@ -116,6 +121,18 @@ void cpu_get_tb_cpu_state(CPURISCVState *env, target_ulong *pc,
     }
     if (env->cur_pmbase != 0) {
         flags = FIELD_DP32(flags, TB_FLAGS, PM_BASE_ENABLED, 1);
+    }
+
+    if (cpu->cfg.ext_xcvhwlp) {
+        if (env->hwlp[0].lpcount > 1 &&
+            is_same_page(*pc, env->hwlp[0].lpend)) {
+            flags = FIELD_DP32(flags, TB_FLAGS, HWLP_ENABLED0, 1);
+        }
+
+        if (env->hwlp[1].lpcount > 1 &&
+            is_same_page(*pc, env->hwlp[1].lpend)) {
+            flags = FIELD_DP32(flags, TB_FLAGS, HWLP_ENABLED1, 1);
+        }
     }
 
     *pflags = flags;

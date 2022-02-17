@@ -34,7 +34,8 @@
 #include "internals.h"
 
 /* global register indices */
-static TCGv cpu_gpr[32], cpu_gprh[32], cpu_pc, cpu_vl, cpu_vstart;
+static TCGv cpu_gpr[32], cpu_gprh[32], cpu_pc, cpu_vl, cpu_vstart,
+            lpcount[2], lpstart[2], lpend[2];
 static TCGv_i64 cpu_fpr[32]; /* assume F and D extensions */
 static TCGv load_res;
 static TCGv load_val;
@@ -112,6 +113,10 @@ typedef struct DisasContext {
     /* PointerMasking extension */
     bool pm_mask_enabled;
     bool pm_base_enabled;
+
+    /* HWLP */
+    bool hwlp_enabled[2];
+
     /* Use icount trigger for native debug */
     bool itrigger;
     /* FRM is known to contain a valid value. */
@@ -142,7 +147,7 @@ static bool has_xthead_p(DisasContext *ctx  __attribute__((__unused__)))
 
 static bool has_xpulp_p(DisasContext *ctx  __attribute__((__unused__)))
 {
-    return ctx->cfg_ptr->ext_xcvmem;
+    return ctx->cfg_ptr->ext_xcvmem || ctx->cfg_ptr->ext_xcvhwlp;
 }
 
 #define MATERIALISE_EXT_PREDICATE(ext)  \
@@ -568,8 +573,24 @@ static void gen_set_fpr_d(DisasContext *ctx, int reg_num, TCGv_i64 t)
     }
 }
 
+static void check_hwlp_body(DisasContext *ctx, target_ulong type)
+{
+    if (ctx->cfg_ptr->ext_xcvhwlp) {
+        gen_helper_check_hwlp_body(cpu_env, cpu_pc, tcg_constant_tl(type));
+    }
+}
+
+static void check_target_hwlp_body(DisasContext *ctx, TCGv target)
+{
+    if (ctx->cfg_ptr->ext_xcvhwlp) {
+        gen_helper_check_hwlp_body(cpu_env, target,
+                                   tcg_constant_tl(HWLP_TYPE_TARGET_PC));
+    }
+}
+
 static void gen_jal(DisasContext *ctx, int rd, target_ulong imm)
 {
+    check_hwlp_body(ctx, HWLP_TYPE_JUMP_BR);
     target_ulong next_pc;
 
     /* check misaligned: */
@@ -582,6 +603,7 @@ static void gen_jal(DisasContext *ctx, int rd, target_ulong imm)
     }
 
     gen_set_gpri(ctx, rd, ctx->pc_succ_insn);
+    check_target_hwlp_body(ctx, tcg_constant_tl(next_pc));
     gen_goto_tb(ctx, 0, ctx->base.pc_next + imm); /* must use this for safety */
     ctx->base.is_jmp = DISAS_NORETURN;
 }
@@ -1172,6 +1194,7 @@ static void decode_opc(CPURISCVState *env, DisasContext *ctx, uint16_t opcode)
     ctx->virt_inst_excp = false;
     /* Check for compressed insn */
     if (insn_len(opcode) == 2) {
+        check_hwlp_body(ctx, HWLP_TYPE_RVC);
         ctx->opcode = opcode;
         ctx->pc_succ_insn = ctx->base.pc_next + 2;
         if (has_ext(ctx, RVC) && decode_insn16(ctx, opcode)) {
@@ -1188,6 +1211,21 @@ static void decode_opc(CPURISCVState *env, DisasContext *ctx, uint16_t opcode)
         for (size_t i = 0; i < ARRAY_SIZE(decoders); ++i) {
             if (decoders[i].guard_func(ctx) &&
                 decoders[i].decode_func(ctx, opcode32)) {
+                for (size_t j = 0; j < 2; j++) {
+                    if (ctx->hwlp_enabled[j]) {
+                        TCGLabel *l = gen_new_label();
+                        tcg_gen_brcond_tl(TCG_COND_NE,
+                                          tcg_constant_tl(ctx->base.pc_next),
+                                          lpend[j], l);
+                        tcg_gen_brcond_tl(TCG_COND_LE, lpcount[j],
+                                          tcg_constant_tl(1), l);
+                        tcg_gen_subi_tl(lpcount[j], lpcount[j], 1);
+                        gen_set_pc(ctx, lpstart[j]);
+                        gen_set_label(l); /* branch not taken */
+                        gen_goto_tb(ctx, 1, ctx->pc_succ_insn);
+                        ctx->base.is_jmp = DISAS_NORETURN;
+                    }
+                }
                 return;
             }
         }
@@ -1240,6 +1278,8 @@ static void riscv_tr_init_disas_context(DisasContextBase *dcbase, CPUState *cs)
     memset(ctx->ftemp, 0, sizeof(ctx->ftemp));
     ctx->pm_mask_enabled = FIELD_EX32(tb_flags, TB_FLAGS, PM_MASK_ENABLED);
     ctx->pm_base_enabled = FIELD_EX32(tb_flags, TB_FLAGS, PM_BASE_ENABLED);
+    ctx->hwlp_enabled[0] = FIELD_EX32(tb_flags, TB_FLAGS, HWLP_ENABLED0);
+    ctx->hwlp_enabled[1] = FIELD_EX32(tb_flags, TB_FLAGS, HWLP_ENABLED1);
     ctx->itrigger = FIELD_EX32(tb_flags, TB_FLAGS, ITRIGGER);
     ctx->zero = tcg_constant_tl(0);
     ctx->virt_inst_excp = false;
@@ -1383,4 +1423,23 @@ void riscv_translate_init(void)
                                  "pmmask");
     pm_base = tcg_global_mem_new(cpu_env, offsetof(CPURISCVState, cur_pmbase),
                                  "pmbase");
+
+    lpcount[0] = tcg_global_mem_new(cpu_env, offsetof(CPURISCVState,
+                                                      hwlp[0].lpcount),
+                                    "lpcount0");
+    lpcount[1] = tcg_global_mem_new(cpu_env, offsetof(CPURISCVState,
+                                                      hwlp[1].lpcount),
+                                    "lpcount1");
+    lpstart[0] = tcg_global_mem_new(cpu_env, offsetof(CPURISCVState,
+                                                      hwlp[0].lpstart),
+                                    "lpstart0");
+    lpstart[1] = tcg_global_mem_new(cpu_env, offsetof(CPURISCVState,
+                                                      hwlp[1].lpstart),
+                                    "lpstart1");
+    lpend[0] = tcg_global_mem_new(cpu_env, offsetof(CPURISCVState,
+                                                    hwlp[0].lpend),
+                                  "lpend0");
+    lpend[1] = tcg_global_mem_new(cpu_env, offsetof(CPURISCVState,
+                                                    hwlp[1].lpend),
+                                  "lpend1");
 }
