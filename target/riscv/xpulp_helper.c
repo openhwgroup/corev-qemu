@@ -380,3 +380,83 @@ target_ulong HELPER(cplxmul_i)(target_ulong a, target_ulong b,
     d[0] = s3[0];
     return result;
 }
+
+target_ulong HELPER(muluN)(target_ulong a, target_ulong b, target_ulong c,
+                           target_ulong i)
+{
+    target_ulong result = 0;
+    uint16_t *s1 = (uint16_t *)&a, *s2 = (uint16_t *)&b;
+
+    result = (target_ulong)(s1[i] * s2[i]) >> c;
+    return result;
+}
+
+target_ulong HELPER(mulsN)(target_ulong a, target_ulong b, target_ulong c,
+                           target_ulong i)
+{
+    target_ulong result = 0;
+    int16_t *s1 = (int16_t *)&a, *s2 = (int16_t *)&b;
+
+    result = (target_long)(s1[i] * s2[i]) >> c;
+    return result;
+}
+
+target_ulong HELPER(muluRN)(target_ulong a, target_ulong b, target_ulong c,
+                            target_ulong i)
+{
+    target_ulong result = 0;
+    uint16_t *s1 = (uint16_t *)&a, *s2 = (uint16_t *)&b;
+
+    result = (target_ulong)(s1[i] * s2[i] + (1 << (c - 1))) >> c;
+    return result;
+}
+
+target_ulong HELPER(mulsRN)(target_ulong a, target_ulong b, target_ulong c,
+                            target_ulong i)
+{
+    target_ulong result = 0;
+    int16_t *s1 = (int16_t *)&a, *s2 = (int16_t *)&b;
+
+    result = (target_long)(s1[i] * s2[i] + (1 << (c - 1))) >> c;
+    return result;
+}
+
+target_ulong HELPER(macuN)(target_ulong a, target_ulong b, target_ulong c,
+                           target_ulong d, target_ulong i)
+{
+    target_ulong result = 0;
+    uint16_t *s1 = (uint16_t *)&a, *s2 = (uint16_t *)&b;
+
+    result = (target_ulong)(s1[i] * s2[i] + c) >> d;
+    return result;
+}
+
+target_ulong HELPER(macsN)(target_ulong a, target_ulong b, target_ulong c,
+                           target_ulong d, target_ulong i)
+{
+    target_long result = 0;
+    int16_t *s1 = (int16_t *)&a, *s2 = (int16_t *)&b;
+
+    result = (target_long)(s1[i] * s2[i] + c) >> d;
+    return result;
+}
+
+target_ulong HELPER(macuRN)(target_ulong a, target_ulong b, target_ulong c,
+                            target_ulong d, target_ulong i)
+{
+    target_ulong result = 0;
+    uint16_t *s1 = (uint16_t *)&a, *s2 = (uint16_t *)&b;
+
+    result = (target_ulong)(s1[i] * s2[i] + c + (1 << (d - 1))) >> d;
+    return result;
+}
+
+target_ulong HELPER(macsRN)(target_ulong a, target_ulong b, target_ulong c,
+                            target_ulong d, target_ulong i)
+{
+    target_ulong result = 0;
+    int16_t *s1 = (int16_t *)&a, *s2 = (int16_t *)&b;
+
+    result = (target_long)(s1[i] * s2[i] + c + (1 << (d - 1))) >> d;
+    return result;
+}

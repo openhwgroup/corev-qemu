@@ -36,6 +36,12 @@
     }                                     \
 } while (0)
 
+#define REQUIRE_XCVMAC(ctx) do {          \
+    if (!ctx->cfg_ptr->ext_xcvmac) {      \
+        return false;                     \
+    }                                     \
+} while (0)
+
 static bool gen_load_rr_tl(DisasContext *ctx, arg_r *a, MemOp memop,
                            bool postInc)
 {
@@ -1881,3 +1887,94 @@ static bool trans_cv_sub_div8(DisasContext *ctx, arg_cv_sub_div8 *a)
     return gen_simd_div(ctx, a, EXT_NONE, 3, tcg_gen_vec_sub16_tl,
                         tcg_gen_vec_shr16i_tl);
 }
+
+static bool trans_cv_mac(DisasContext *ctx, arg_cv_mac *a)
+{
+    REQUIRE_XCVMAC(ctx);
+    TCGv dest = tcg_temp_new();
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT_NONE);
+    TCGv src2 = get_gpr(ctx, a->rs2, EXT_NONE);
+    TCGv src3 = get_gpr(ctx, a->rd, EXT_NONE);
+
+    tcg_gen_mul_tl(dest, src1, src2);
+    tcg_gen_add_tl(dest, dest, src3);
+    gen_set_gpr(ctx, a->rd, dest);
+    return true;
+}
+
+static bool trans_cv_msu(DisasContext *ctx, arg_cv_msu *a)
+{
+    REQUIRE_XCVMAC(ctx);
+    TCGv dest = tcg_temp_new();
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT_NONE);
+    TCGv src2 = get_gpr(ctx, a->rs2, EXT_NONE);
+    TCGv src3 = get_gpr(ctx, a->rd, EXT_NONE);
+
+    tcg_gen_mul_tl(dest, src1, src2);
+    tcg_gen_sub_tl(dest, src3, dest);
+    gen_set_gpr(ctx, a->rd, dest);
+    return true;
+}
+
+static inline bool gen_mul(DisasContext *ctx, arg_mac *a,
+                           DisasExtend ext, int extra,
+                           void (*fn)(TCGv, TCGv, TCGv,
+                                      TCGv, TCGv))
+{
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src1 = get_gpr(ctx, a->rs1, ext);
+    TCGv src2 = get_gpr(ctx, a->rs2, ext);
+    TCGv src3 = tcg_constant_tl(a->imm);
+
+    fn(dest, src1, src2, src3, tcg_constant_tl(extra));
+    gen_set_gpr(ctx, a->rd, dest);
+    return true;
+}
+
+#define GEN_MUL16X16_TRANS(NAME, FUNC, EXT, HIGH)        \
+static bool trans_##NAME(DisasContext *s, arg_mac *a)    \
+{                                                        \
+    REQUIRE_XCVMAC(s);                                   \
+    return gen_mul(s, a, EXT, HIGH, gen_helper_##FUNC);  \
+}
+
+GEN_MUL16X16_TRANS(cv_muluN, muluN, EXT_NONE, 0)
+GEN_MUL16X16_TRANS(cv_mulhhuN, muluN, EXT_NONE, 1)
+GEN_MUL16X16_TRANS(cv_mulsN, mulsN, EXT_NONE, 0)
+GEN_MUL16X16_TRANS(cv_mulhhsN, mulsN, EXT_NONE, 1)
+GEN_MUL16X16_TRANS(cv_muluRN, muluRN, EXT_NONE, 0)
+GEN_MUL16X16_TRANS(cv_mulhhuRN, muluRN, EXT_NONE, 1)
+GEN_MUL16X16_TRANS(cv_mulsRN, mulsRN, EXT_NONE, 0)
+GEN_MUL16X16_TRANS(cv_mulhhsRN, mulsRN, EXT_NONE, 1)
+
+static inline bool gen_mac(DisasContext *ctx, arg_mac *a,
+                           DisasExtend ext, int extra,
+                           void (*fn)(TCGv, TCGv, TCGv,
+                                       TCGv, TCGv, TCGv))
+{
+    TCGv dest = tcg_temp_new();
+    TCGv src1 = get_gpr(ctx, a->rs1, ext);
+    TCGv src2 = get_gpr(ctx, a->rs2, ext);
+    TCGv src3 = get_gpr(ctx, a->rd, ext);
+    TCGv src4 = tcg_constant_tl(a->imm);
+
+    fn(dest, src1, src2, src3, src4, tcg_constant_tl(extra));
+    gen_set_gpr(ctx, a->rd, dest);
+    return true;
+}
+
+#define GEN_MAC16X16_TRANS(NAME, FUNC, EXT, HIGH)        \
+static bool trans_##NAME(DisasContext *s, arg_mac *a)    \
+{                                                        \
+    REQUIRE_XCVMAC(s);                                   \
+    return gen_mac(s, a, EXT, HIGH, gen_helper_##FUNC);  \
+}
+
+GEN_MAC16X16_TRANS(cv_macuN, macuN, EXT_NONE, 0)
+GEN_MAC16X16_TRANS(cv_machhuN, macuN, EXT_NONE, 1)
+GEN_MAC16X16_TRANS(cv_macsN, macsN, EXT_NONE, 0)
+GEN_MAC16X16_TRANS(cv_machhsN, macsN, EXT_NONE, 1)
+GEN_MAC16X16_TRANS(cv_macuRN, macuRN, EXT_NONE, 0)
+GEN_MAC16X16_TRANS(cv_machhuRN, macuRN, EXT_NONE, 1)
+GEN_MAC16X16_TRANS(cv_macsRN, macsRN, EXT_NONE, 0)
+GEN_MAC16X16_TRANS(cv_machhsRN, macsRN, EXT_NONE, 1)
