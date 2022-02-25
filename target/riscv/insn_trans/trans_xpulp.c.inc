@@ -48,6 +48,12 @@
     }                                     \
 } while (0)
 
+#define REQUIRE_XCVALU(ctx) do {          \
+    if (!ctx->cfg_ptr->ext_xcvalu) {      \
+        return false;                     \
+    }                                     \
+} while (0)
+
 static bool gen_load_rr_tl(DisasContext *ctx, arg_r *a, MemOp memop,
                            bool postInc)
 {
@@ -2099,3 +2105,198 @@ static bool trans_cv_ror(DisasContext *ctx, arg_cv_ror *a)
     REQUIRE_XCVBITMANIP(ctx);
     return gen_arith(ctx, a, EXT_ZERO, tcg_gen_rotr_tl, NULL);
 }
+
+static bool trans_cv_abs(DisasContext *ctx, arg_cv_abs *a)
+{
+    REQUIRE_XCVALU(ctx);
+    return gen_unary(ctx, a, EXT_NONE, tcg_gen_abs_tl);
+}
+
+static bool trans_cv_slet(DisasContext *ctx, arg_cv_slet *a)
+{
+    REQUIRE_XCVALU(ctx);
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT_NONE);
+    TCGv src2 = get_gpr(ctx, a->rs2, EXT_NONE);
+
+    tcg_gen_setcond_tl(TCG_COND_LE, dest, src1, src2);
+    gen_set_gpr(ctx, a->rd, dest);
+    return true;
+}
+
+static bool trans_cv_sletu(DisasContext *ctx, arg_cv_slet *a)
+{
+    REQUIRE_XCVALU(ctx);
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT_NONE);
+    TCGv src2 = get_gpr(ctx, a->rs2, EXT_NONE);
+
+    tcg_gen_setcond_tl(TCG_COND_LEU, dest, src1, src2);
+    gen_set_gpr(ctx, a->rd, dest);
+    return true;
+}
+
+static bool trans_cv_min(DisasContext *ctx, arg_cv_min *a)
+{
+    REQUIRE_XCVALU(ctx);
+    return gen_arith(ctx, a, EXT_NONE, tcg_gen_smin_tl, NULL);
+}
+
+static bool trans_cv_minu(DisasContext *ctx, arg_cv_minu *a)
+{
+    REQUIRE_XCVALU(ctx);
+    return gen_arith(ctx, a, EXT_NONE, tcg_gen_umin_tl, NULL);
+}
+
+static bool trans_cv_max(DisasContext *ctx, arg_cv_max *a)
+{
+    REQUIRE_XCVALU(ctx);
+    return gen_arith(ctx, a, EXT_NONE, tcg_gen_smax_tl, NULL);
+}
+
+static bool trans_cv_maxu(DisasContext *ctx, arg_cv_maxu *a)
+{
+    REQUIRE_XCVALU(ctx);
+    return gen_arith(ctx, a, EXT_NONE, tcg_gen_umax_tl, NULL);
+}
+
+static bool trans_cv_exths(DisasContext *ctx, arg_cv_exths *a)
+{
+    REQUIRE_XCVALU(ctx);
+    return gen_unary(ctx, a, EXT_NONE, tcg_gen_ext16s_tl);
+}
+
+static bool trans_cv_exthz(DisasContext *ctx, arg_cv_exthz *a)
+{
+    REQUIRE_XCVALU(ctx);
+    return gen_unary(ctx, a, EXT_NONE, tcg_gen_ext16u_tl);
+}
+
+static bool trans_cv_extbs(DisasContext *ctx, arg_cv_extbs *a)
+{
+    REQUIRE_XCVALU(ctx);
+    return gen_unary(ctx, a, EXT_NONE, tcg_gen_ext8s_tl);
+}
+
+static bool trans_cv_extbz(DisasContext *ctx, arg_cv_extbz *a)
+{
+    REQUIRE_XCVALU(ctx);
+    return gen_unary(ctx, a, EXT_NONE, tcg_gen_ext8u_tl);
+}
+
+static bool trans_cv_clip(DisasContext *ctx, arg_cv_clip *a)
+{
+    REQUIRE_XCVALU(ctx);
+    return gen_arith_imm_tl(ctx, a, EXT_NONE, gen_helper_clip, NULL);
+}
+
+static bool trans_cv_clipr(DisasContext *ctx, arg_cv_clipr *a)
+{
+    REQUIRE_XCVALU(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_clipr, NULL);
+}
+
+static bool trans_cv_clipu(DisasContext *ctx, arg_cv_clipu *a)
+{
+    REQUIRE_XCVALU(ctx);
+    return gen_arith_imm_tl(ctx, a, EXT_NONE, gen_helper_clipu, NULL);
+}
+
+static bool trans_cv_clipur(DisasContext *ctx, arg_cv_clipur *a)
+{
+    REQUIRE_XCVALU(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_clipur, NULL);
+}
+
+#define GEN_ARITH_SHIFT_IMM(NAME, OP, SHIFT, EXT)           \
+static bool trans_##NAME(DisasContext *ctx, arg_##NAME *a)  \
+{                                                           \
+    REQUIRE_XCVALU(ctx);                                    \
+    TCGv dest = dest_gpr(ctx, a->rd);                       \
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT);                  \
+    TCGv src2 = get_gpr(ctx, a->rs2, EXT);                  \
+                                                            \
+    tcg_gen_##OP##_tl(dest, src1, src2);                    \
+    tcg_gen_##SHIFT##_tl(dest, dest, a->imm);               \
+    gen_set_gpr(ctx, a->rd, dest);                          \
+    return true;                                            \
+}
+
+GEN_ARITH_SHIFT_IMM(cv_addN, add, sari, EXT_NONE)
+GEN_ARITH_SHIFT_IMM(cv_adduN, add, shri, EXT_NONE)
+GEN_ARITH_SHIFT_IMM(cv_subN, sub, sari, EXT_NONE)
+GEN_ARITH_SHIFT_IMM(cv_subuN, sub, shri, EXT_NONE)
+
+#define GEN_ARITH_R_SHIFT_IMM(NAME, OP, SHIFT, EXT)         \
+static bool trans_##NAME(DisasContext *ctx, arg_##NAME *a)  \
+{                                                           \
+    REQUIRE_XCVALU(ctx);                                    \
+    TCGv dest = dest_gpr(ctx, a->rd);                       \
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT);                  \
+    TCGv src2 = get_gpr(ctx, a->rs2, EXT);                  \
+    TCGv src3 = tcg_constant_tl(1 << (a->imm - 1));         \
+                                                            \
+    tcg_gen_##OP##_tl(dest, src1, src2);                    \
+    tcg_gen_add_tl(dest, dest, src3);                       \
+    tcg_gen_##SHIFT##_tl(dest, dest, a->imm);               \
+    gen_set_gpr(ctx, a->rd, dest);                          \
+    return true;                                            \
+}
+
+GEN_ARITH_R_SHIFT_IMM(cv_addRN, add, sari, EXT_NONE)
+GEN_ARITH_R_SHIFT_IMM(cv_adduRN, add, shri, EXT_NONE)
+GEN_ARITH_R_SHIFT_IMM(cv_subRN, sub, sari, EXT_NONE)
+GEN_ARITH_R_SHIFT_IMM(cv_subuRN, sub, shri, EXT_NONE)
+
+#define GEN_ARITH_SHIFT_REG(NAME, OP, SHIFT, EXT)           \
+static bool trans_##NAME(DisasContext *ctx, arg_##NAME *a)  \
+{                                                           \
+    REQUIRE_XCVALU(ctx);                                    \
+    TCGv t0 = tcg_temp_new();                               \
+    TCGv t1 = tcg_temp_new();                               \
+    TCGv dest = get_gpr(ctx, a->rd, EXT);                   \
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT);                  \
+    TCGv src2 = get_gpr(ctx, a->rs2, EXT);                  \
+                                                            \
+    tcg_gen_##OP##_tl(t0, dest, src1);                      \
+    tcg_gen_andi_tl(t1, src2, 0x1F);                        \
+    tcg_gen_##SHIFT##_tl(t0, t0, t1);                       \
+    gen_set_gpr(ctx, a->rd, t0);                            \
+    tcg_temp_free(t0);                                      \
+    tcg_temp_free(t1);                                      \
+    return true;                                            \
+}
+
+GEN_ARITH_SHIFT_REG(cv_addNr, add, sar, EXT_NONE)
+GEN_ARITH_SHIFT_REG(cv_adduNr, add, shr, EXT_NONE)
+GEN_ARITH_SHIFT_REG(cv_subNr, sub, sar, EXT_NONE)
+GEN_ARITH_SHIFT_REG(cv_subuNr, sub, shr, EXT_NONE)
+
+#define GEN_ARITH_R_SHIFT_REG(NAME, OP, SHIFT, EXT)         \
+static bool trans_##NAME(DisasContext *ctx, arg_##NAME *a)  \
+{                                                           \
+    REQUIRE_XCVALU(ctx);                                    \
+    TCGv t0 = tcg_temp_new();                               \
+    TCGv t1 = tcg_temp_new();                               \
+    TCGv t2 = tcg_temp_new();                               \
+    TCGv dest = get_gpr(ctx, a->rd, EXT);                   \
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT);                  \
+    TCGv src2 = get_gpr(ctx, a->rs2, EXT);                  \
+                                                            \
+    tcg_gen_##OP##_tl(t0, dest, src1);                      \
+    tcg_gen_andi_tl(t1, src2, 0x1F);                        \
+    tcg_gen_subi_tl(t2, t1, 1);                             \
+    tcg_gen_shl_tl(t2, tcg_constant_tl(1), t2);             \
+    tcg_gen_add_tl(t0, t0, t2);                             \
+    tcg_gen_##SHIFT##_tl(t0, t0, t1);                       \
+    gen_set_gpr(ctx, a->rd, t0);                            \
+    tcg_temp_free(t0);                                      \
+    tcg_temp_free(t1);                                      \
+    tcg_temp_free(t2);                                      \
+    return true;                                            \
+}
+
+GEN_ARITH_R_SHIFT_REG(cv_addRNr, add, sar, EXT_NONE)
+GEN_ARITH_R_SHIFT_REG(cv_adduRNr, add, shr, EXT_NONE)
+GEN_ARITH_R_SHIFT_REG(cv_subRNr, sub, sar, EXT_NONE)
+GEN_ARITH_R_SHIFT_REG(cv_subuRNr, sub, shr, EXT_NONE)

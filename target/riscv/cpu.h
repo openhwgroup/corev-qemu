@@ -493,6 +493,7 @@ struct RISCVCPUConfig {
     uint64_t mimpid;
 
     /* Vendor-specific custom extensions */
+    bool ext_xcvalu;
     bool ext_xcvbitmanip;
     bool ext_xcvhwlp;
     bool ext_xcvmac;

@@ -598,3 +598,63 @@ target_ulong HELPER(clb)(target_ulong a)
 
     return a == 0 ? 0 : do_clz(t) - 1;
 }
+
+target_ulong HELPER(clip)(target_ulong a, target_ulong b)
+{
+    target_long min = b == 0 ? -1 : -(1 << (b - 1));
+    target_long max = b == 0 ? 0 : (1 << (b - 1)) - 1;
+    target_long c = *(target_long *)&a;
+
+    if (c <= min) {
+        return min;
+    } else if (c >= max) {
+        return max;
+    } else {
+        return a;
+    }
+}
+
+target_ulong HELPER(clipr)(target_ulong a, target_ulong b)
+{
+    target_long min = -(b + 1);
+    target_long max = b;
+    target_long c = *(target_long *)&a;
+
+    if (c <= min) {
+        return min;
+    } else if (c >= max) {
+        return max;
+    } else {
+        return a;
+    }
+}
+
+target_ulong HELPER(clipu)(target_ulong a, target_ulong b)
+{
+    target_long min = 0;
+    target_long max = b == 0 ? 0 : (1 << (b - 1)) - 1;
+    target_long c = *(target_long *)&a;
+
+    if (c <= min) {
+        return min;
+    } else if (c >= max) {
+        return max;
+    } else {
+        return a;
+    }
+}
+
+target_ulong HELPER(clipur)(target_ulong a, target_ulong b)
+{
+    target_long min = 0;
+    target_long max = b;
+    target_long c = *(target_long *)&a;
+
+    if (c <= min) {
+        return min;
+    } else if (c >= max) {
+        return max;
+    } else {
+        return a;
+    }
+}
