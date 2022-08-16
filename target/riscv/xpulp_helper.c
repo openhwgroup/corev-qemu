@@ -127,3 +127,51 @@ static inline void do_maxu_b(void *vd, void *va, void *vb, uint8_t i)
     d[i] = a[i] > b[i] ? a[i] : b[i];
 }
 XPULP_SIMD(maxu_b, 1);
+
+static inline void do_shr_h(void *vd, void *va, void *vb, uint8_t i)
+{
+    uint16_t *d = vd, *a = va, *b = vb;
+
+    d[i] = a[i] >> b[i];
+}
+XPULP_SIMD(shr_h, 2);
+
+static inline void do_shr_b(void *vd, void *va, void *vb, uint8_t i)
+{
+    uint8_t *d = vd, *a = va, *b = vb;
+
+    d[i] = a[i] >> b[i];
+}
+XPULP_SIMD(shr_b, 1);
+
+static inline void do_sra_h(void *vd, void *va, void *vb, uint8_t i)
+{
+    int16_t *d = vd, *a = va, *b = vb;
+
+    d[i] = a[i] >> b[i];
+}
+XPULP_SIMD(sra_h, 2);
+
+static inline void do_sra_b(void *vd, void *va, void *vb, uint8_t i)
+{
+    int8_t *d = vd, *a = va, *b = vb;
+
+    d[i] = a[i] >> b[i];
+}
+XPULP_SIMD(sra_b, 1);
+
+static inline void do_shl_h(void *vd, void *va, void *vb, uint8_t i)
+{
+    uint16_t *d = vd, *a = va, *b = vb;
+
+    d[i] = a[i] << b[i];
+}
+XPULP_SIMD(shl_h, 2);
+
+static inline void do_shl_b(void *vd, void *va, void *vb, uint8_t i)
+{
+    uint8_t *d = vd, *a = va, *b = vb;
+
+    d[i] = a[i] << b[i];
+}
+XPULP_SIMD(shl_b, 1);

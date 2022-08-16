@@ -706,3 +706,159 @@ static bool trans_cv_maxu_sci_b(DisasContext *ctx, arg_cv_maxu_sci_b *a)
     REQUIRE_XCVSIMD(ctx);
     return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, gen_helper_maxu_b);
 }
+
+static bool trans_cv_srl_h(DisasContext *ctx, arg_cv_srl_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_shr_h, NULL);
+}
+
+static void gen_vec_shr16(TCGv d, TCGv a, TCGv c)
+{
+    TCGv mask = tcg_temp_new();
+
+    tcg_gen_shr_tl(mask, tcg_constant_tl(0xffff), c);
+    tcg_gen_dup_tl(MO_16, mask, mask);
+    tcg_gen_shr_tl(d, a, c);
+    tcg_gen_and_tl(d, d, mask);
+
+    tcg_temp_free(mask);
+}
+
+static bool trans_cv_srl_sc_h(DisasContext *ctx, arg_cv_srl_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_vec_shr16, NULL);
+}
+
+static bool trans_cv_srl_sci_h(DisasContext *ctx, arg_cv_srl_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith_imm_fn(ctx, a, EXT_NONE, tcg_gen_vec_shr16i_tl, NULL);
+}
+
+static bool trans_cv_srl_b(DisasContext *ctx, arg_cv_srl_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_shr_b, NULL);
+}
+
+static void gen_vec_shr8(TCGv d, TCGv a, TCGv c)
+{
+    TCGv mask = tcg_temp_new();
+
+    tcg_gen_shr_tl(mask, tcg_constant_tl(0xff), c);
+    tcg_gen_dup_tl(MO_8, mask, mask);
+    tcg_gen_shr_tl(d, a, c);
+    tcg_gen_and_tl(d, d, mask);
+
+    tcg_temp_free(mask);
+}
+
+static bool trans_cv_srl_sc_b(DisasContext *ctx, arg_cv_srl_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_vec_shr8, NULL);
+}
+
+static bool trans_cv_srl_sci_b(DisasContext *ctx, arg_cv_srl_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith_imm_fn(ctx, a, EXT_NONE, tcg_gen_vec_shr8i_tl, NULL);
+}
+
+static bool trans_cv_sra_h(DisasContext *ctx, arg_cv_sra_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_sra_h, NULL);
+}
+
+static bool trans_cv_sra_sc_h(DisasContext *ctx, arg_cv_sra_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, gen_helper_sra_h);
+}
+
+static bool trans_cv_sra_sci_h(DisasContext *ctx, arg_cv_sra_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith_imm_fn(ctx, a, EXT_NONE, tcg_gen_vec_sar16i_tl, NULL);
+}
+
+static bool trans_cv_sra_b(DisasContext *ctx, arg_cv_sra_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_sra_b, NULL);
+}
+
+static bool trans_cv_sra_sc_b(DisasContext *ctx, arg_cv_sra_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, gen_helper_sra_b);
+}
+
+static bool trans_cv_sra_sci_b(DisasContext *ctx, arg_cv_sra_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith_imm_fn(ctx, a, EXT_NONE, tcg_gen_vec_sar8i_tl, NULL);
+}
+
+static bool trans_cv_sll_h(DisasContext *ctx, arg_cv_sll_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_shl_h, NULL);
+}
+
+static void gen_vec_shl16(TCGv d, TCGv a, TCGv c)
+{
+    TCGv mask = tcg_temp_new();
+
+    tcg_gen_shl_tl(mask, tcg_constant_tl(0xffff), c);
+    tcg_gen_dup_tl(MO_16, mask, mask);
+    tcg_gen_shl_tl(d, a, c);
+    tcg_gen_and_tl(d, d, mask);
+
+    tcg_temp_free(mask);
+}
+
+static bool trans_cv_sll_sc_h(DisasContext *ctx, arg_cv_sll_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_vec_shl16, NULL);
+}
+
+static bool trans_cv_sll_sci_h(DisasContext *ctx, arg_cv_sll_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith_imm_fn(ctx, a, EXT_NONE, tcg_gen_vec_shl16i_tl, NULL);
+}
+
+static bool trans_cv_sll_b(DisasContext *ctx, arg_cv_sll_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_shl_b, NULL);
+}
+
+static void gen_vec_shl8(TCGv d, TCGv a, TCGv c)
+{
+    TCGv mask = tcg_temp_new();
+
+    tcg_gen_shl_tl(mask, tcg_constant_tl(0xff), c);
+    tcg_gen_dup_tl(MO_8, mask, mask);
+    tcg_gen_shl_tl(d, a, c);
+    tcg_gen_and_tl(d, d, mask);
+
+    tcg_temp_free(mask);
+}
+
+static bool trans_cv_sll_sc_b(DisasContext *ctx, arg_cv_sll_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_vec_shl8, NULL);
+}
+
+static bool trans_cv_sll_sci_b(DisasContext *ctx, arg_cv_sll_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith_imm_fn(ctx, a, EXT_NONE, tcg_gen_vec_shl8i_tl, NULL);
+}
