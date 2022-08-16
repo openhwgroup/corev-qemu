@@ -344,3 +344,39 @@ HELPER_CMP(cmpltu_h, <, uint16_t, 2);
 HELPER_CMP(cmpltu_b, <, uint8_t, 1);
 HELPER_CMP(cmpleu_h, <=, uint16_t, 2);
 HELPER_CMP(cmpleu_b, <=, uint8_t, 1);
+
+target_ulong HELPER(subrotmj)(target_ulong a, target_ulong b,
+                              target_ulong div)
+{
+    target_ulong result = 0;
+    int16_t *d = (int16_t *)&result;
+    int16_t *s1 = (int16_t *)&a, *s2 = (int16_t *)&b;
+
+    d[0] = (int16_t)(s1[1] - s2[1]) >> div;
+    d[1] = (int16_t)(s2[0] - s1[0]) >> div;
+    return result;
+}
+
+target_ulong HELPER(cplxmul_r)(target_ulong a, target_ulong b,
+                               target_ulong c, target_ulong div)
+{
+    target_ulong result = 0;
+    int16_t *d = (int16_t *)&result;
+    int16_t *s1 = (int16_t *)&a, *s2 = (int16_t *)&b, *s3 = (int16_t *)&c;
+
+    d[0] = (s1[0] * s2[0] - s1[1] * s2[1]) >> (div + 15);
+    d[1] = s3[1];
+    return result;
+}
+
+target_ulong HELPER(cplxmul_i)(target_ulong a, target_ulong b,
+                               target_ulong c, target_ulong div)
+{
+    target_ulong result = 0;
+    int16_t *d = (int16_t *)&result;
+    int16_t *s1 = (int16_t *)&a, *s2 = (int16_t *)&b, *s3 = (int16_t *)&c;
+
+    d[1] = (s1[0] * s2[1] + s1[1] * s2[0]) >> (div + 15);
+    d[0] = s3[0];
+    return result;
+}

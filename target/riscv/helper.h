@@ -1195,3 +1195,7 @@ DEF_HELPER_FLAGS_2(cmpltu_h, TCG_CALL_NO_RWG_SE, tl, tl, tl)
 DEF_HELPER_FLAGS_2(cmpltu_b, TCG_CALL_NO_RWG_SE, tl, tl, tl)
 DEF_HELPER_FLAGS_2(cmpleu_h, TCG_CALL_NO_RWG_SE, tl, tl, tl)
 DEF_HELPER_FLAGS_2(cmpleu_b, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+
+DEF_HELPER_FLAGS_3(subrotmj, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl)
+DEF_HELPER_FLAGS_4(cplxmul_r, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl, tl)
+DEF_HELPER_FLAGS_4(cplxmul_i, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl, tl)
