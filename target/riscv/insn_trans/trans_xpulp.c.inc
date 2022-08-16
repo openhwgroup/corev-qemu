@@ -862,3 +862,224 @@ static bool trans_cv_sll_sci_b(DisasContext *ctx, arg_cv_sll_sci_b *a)
     REQUIRE_XCVSIMD(ctx);
     return gen_arith_imm_fn(ctx, a, EXT_NONE, tcg_gen_vec_shl8i_tl, NULL);
 }
+
+static bool trans_cv_or_h(DisasContext *ctx, arg_cv_or_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_logic(ctx, a, tcg_gen_or_tl);
+}
+
+static bool trans_cv_or_sc_h(DisasContext *ctx, arg_cv_or_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, tcg_gen_or_tl);
+}
+
+static bool trans_cv_or_sci_h(DisasContext *ctx, arg_cv_or_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, tcg_gen_or_tl);
+}
+
+static bool trans_cv_or_b(DisasContext *ctx, arg_cv_or_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_logic(ctx, a, tcg_gen_or_tl);
+}
+
+static bool trans_cv_or_sc_b(DisasContext *ctx, arg_cv_or_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, tcg_gen_or_tl);
+}
+
+static bool trans_cv_or_sci_b(DisasContext *ctx, arg_cv_or_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, tcg_gen_or_tl);
+}
+
+static bool trans_cv_xor_h(DisasContext *ctx, arg_cv_xor_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_logic(ctx, a, tcg_gen_xor_tl);
+}
+
+static bool trans_cv_xor_sc_h(DisasContext *ctx, arg_cv_xor_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, tcg_gen_xor_tl);
+}
+
+static bool trans_cv_xor_sci_h(DisasContext *ctx, arg_cv_xor_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, tcg_gen_xor_tl);
+}
+
+static bool trans_cv_xor_b(DisasContext *ctx, arg_cv_xor_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_logic(ctx, a, tcg_gen_xor_tl);
+}
+
+static bool trans_cv_xor_sc_b(DisasContext *ctx, arg_cv_xor_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, tcg_gen_xor_tl);
+}
+
+static bool trans_cv_xor_sci_b(DisasContext *ctx, arg_cv_xor_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, tcg_gen_xor_tl);
+}
+
+static bool trans_cv_and_h(DisasContext *ctx, arg_cv_and_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_logic(ctx, a, tcg_gen_and_tl);
+}
+
+static bool trans_cv_and_sc_h(DisasContext *ctx, arg_cv_and_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, tcg_gen_and_tl);
+}
+
+static bool trans_cv_and_sci_h(DisasContext *ctx, arg_cv_and_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, tcg_gen_and_tl);
+}
+
+static bool trans_cv_and_b(DisasContext *ctx, arg_cv_and_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_logic(ctx, a, tcg_gen_and_tl);
+}
+
+static bool trans_cv_and_sc_b(DisasContext *ctx, arg_cv_and_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, tcg_gen_and_tl);
+}
+
+static bool trans_cv_and_sci_b(DisasContext *ctx, arg_cv_and_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, tcg_gen_and_tl);
+}
+
+static void gen_abs(TCGv d, TCGv b, unsigned vece)
+{
+    TCGv t = tcg_temp_new();
+    int nbit = 8 << vece;
+    target_ulong mask = dup_const_tl(vece, 1);
+
+    /* Create -1 for each negative element.  */
+    tcg_gen_shri_tl(t, b, nbit - 1);
+    tcg_gen_andi_tl(t, t, mask);
+    tcg_gen_muli_tl(t, t, (1 << nbit) - 1);
+
+    /*
+     * Invert (via xor -1) and add one.
+     * Because of the ordering the msb is cleared,
+     * so we never have carry into the next element.
+     */
+    tcg_gen_xor_tl(d, b, t);
+    tcg_gen_andi_tl(t, t, mask);
+    tcg_gen_add_tl(d, d, t);
+
+    tcg_temp_free(t);
+}
+
+static void gen_abs8(TCGv dest, TCGv src)
+{
+    gen_abs(dest, src, MO_8);
+}
+
+static void gen_abs16(TCGv dest, TCGv src)
+{
+    gen_abs(dest, src, MO_16);
+}
+
+static bool trans_cv_abs_h(DisasContext *ctx, arg_cv_abs_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_unary(ctx, a, EXT_NONE, gen_abs16);
+}
+
+static bool trans_cv_abs_b(DisasContext *ctx, arg_cv_abs_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_unary(ctx, a, EXT_NONE, gen_abs8);
+}
+
+static bool trans_cv_extract_h(DisasContext *ctx, arg_cv_extract_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT_NONE);
+
+    tcg_gen_sextract_tl(dest, src1, (a->imm & 0x1) * 16, 16);
+    gen_set_gpr(ctx, a->rd, dest);
+    return true;
+}
+
+static bool trans_cv_extract_b(DisasContext *ctx, arg_cv_extract_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT_NONE);
+
+    tcg_gen_sextract_tl(dest, src1, (a->imm & 0x3) * 8, 8);
+    gen_set_gpr(ctx, a->rd, dest);
+    return true;
+}
+
+static bool trans_cv_extractu_h(DisasContext *ctx, arg_cv_extractu_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT_NONE);
+
+    tcg_gen_extract_tl(dest, src1, (a->imm & 0x1) * 16, 16);
+    gen_set_gpr(ctx, a->rd, dest);
+    return true;
+}
+
+static bool trans_cv_extractu_b(DisasContext *ctx, arg_cv_extractu_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT_NONE);
+
+    tcg_gen_extract_tl(dest, src1, (a->imm & 0x3) * 8, 8);
+    gen_set_gpr(ctx, a->rd, dest);
+    return true;
+}
+
+static bool trans_cv_insert_h(DisasContext *ctx, arg_cv_insert_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src = get_gpr(ctx, a->rd, EXT_NONE);
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT_NONE);
+
+    tcg_gen_deposit_tl(dest, src, src1, (a->imm & 0x1) * 16, 16);
+    gen_set_gpr(ctx, a->rd, dest);
+    return true;
+}
+
+static bool trans_cv_insert_b(DisasContext *ctx, arg_cv_extract_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src = get_gpr(ctx, a->rd, EXT_NONE);
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT_NONE);
+
+    tcg_gen_deposit_tl(dest, src, src1, (a->imm & 0x3) * 8, 8);
+    gen_set_gpr(ctx, a->rd, dest);
+    return true;
+}
