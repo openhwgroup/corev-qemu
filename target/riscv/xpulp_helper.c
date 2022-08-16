@@ -314,3 +314,33 @@ static inline void do_shuffle2_b(void *vd, void *va, void *vb, void *vc,
     }
 }
 XPULP_SIMD3(shuffle2_b, 1);
+
+#define HELPER_CMP(NAME, OP, TYPE, LEN)                                \
+static inline void do_##NAME(void *vd, void *va, void *vb, uint8_t i)  \
+{                                                                      \
+    TYPE *d = vd, *a = va, *b = vb;                                    \
+                                                                       \
+    d[i] = a[i] OP b[i] ? ~0 : 0;                                      \
+}                                                                      \
+XPULP_SIMD(NAME, LEN)
+
+HELPER_CMP(cmpeq_h, ==, int16_t, 2);
+HELPER_CMP(cmpeq_b, ==, int8_t, 1);
+HELPER_CMP(cmpne_h, !=, int16_t, 2);
+HELPER_CMP(cmpne_b, !=, int8_t, 1);
+HELPER_CMP(cmpgt_h, >, int16_t, 2);
+HELPER_CMP(cmpgt_b, >, int8_t, 1);
+HELPER_CMP(cmpge_h, >=, int16_t, 2);
+HELPER_CMP(cmpge_b, >=, int8_t, 1);
+HELPER_CMP(cmplt_h, <, int16_t, 2);
+HELPER_CMP(cmplt_b, <, int8_t, 1);
+HELPER_CMP(cmple_h, <=, int16_t, 2);
+HELPER_CMP(cmple_b, <=, int8_t, 1);
+HELPER_CMP(cmpgtu_h, >, uint16_t, 2);
+HELPER_CMP(cmpgtu_b, >, uint8_t, 1);
+HELPER_CMP(cmpgeu_h, >=, uint16_t, 2);
+HELPER_CMP(cmpgeu_b, >=, uint8_t, 1);
+HELPER_CMP(cmpltu_h, <, uint16_t, 2);
+HELPER_CMP(cmpltu_b, <, uint8_t, 1);
+HELPER_CMP(cmpleu_h, <=, uint16_t, 2);
+HELPER_CMP(cmpleu_b, <=, uint8_t, 1);

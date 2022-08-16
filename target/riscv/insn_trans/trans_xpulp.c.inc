@@ -1410,3 +1410,363 @@ static bool trans_cv_packlo_b(DisasContext *ctx, arg_cv_packlo_b *a)
     gen_set_gpr(ctx, a->rd, dest);
     return true;
 }
+
+static bool trans_cv_cmpeq_h(DisasContext *ctx, arg_cv_cmpeq_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmpeq_h, NULL);
+}
+
+static bool trans_cv_cmpeq_sc_h(DisasContext *ctx, arg_cv_cmpeq_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, gen_helper_cmpeq_h);
+}
+
+static bool trans_cv_cmpeq_sci_h(DisasContext *ctx, arg_cv_cmpeq_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, gen_helper_cmpeq_h);
+}
+
+static bool trans_cv_cmpeq_b(DisasContext *ctx, arg_cv_cmpeq_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmpeq_b, NULL);
+}
+
+static bool trans_cv_cmpeq_sc_b(DisasContext *ctx, arg_cv_cmpeq_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, gen_helper_cmpeq_b);
+}
+
+static bool trans_cv_cmpeq_sci_b(DisasContext *ctx, arg_cv_cmpeq_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, gen_helper_cmpeq_b);
+}
+
+static bool trans_cv_cmpne_h(DisasContext *ctx, arg_cv_cmpne_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmpne_h, NULL);
+}
+
+static bool trans_cv_cmpne_sc_h(DisasContext *ctx, arg_cv_cmpne_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, gen_helper_cmpne_h);
+}
+
+static bool trans_cv_cmpne_sci_h(DisasContext *ctx, arg_cv_cmpne_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, gen_helper_cmpne_h);
+}
+
+static bool trans_cv_cmpne_b(DisasContext *ctx, arg_cv_cmpne_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmpne_b, NULL);
+}
+
+static bool trans_cv_cmpne_sc_b(DisasContext *ctx, arg_cv_cmpne_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, gen_helper_cmpne_b);
+}
+
+static bool trans_cv_cmpne_sci_b(DisasContext *ctx, arg_cv_cmpne_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, gen_helper_cmpne_b);
+}
+
+static bool trans_cv_cmpgt_h(DisasContext *ctx, arg_cv_cmpgt_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmpgt_h, NULL);
+}
+
+static bool trans_cv_cmpgt_sc_h(DisasContext *ctx, arg_cv_cmpgt_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, gen_helper_cmpgt_h);
+}
+
+static bool trans_cv_cmpgt_sci_h(DisasContext *ctx, arg_cv_cmpgt_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, gen_helper_cmpgt_h);
+}
+
+static bool trans_cv_cmpgt_b(DisasContext *ctx, arg_cv_cmpgt_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmpgt_b, NULL);
+}
+
+static bool trans_cv_cmpgt_sc_b(DisasContext *ctx, arg_cv_cmpgt_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, gen_helper_cmpgt_b);
+}
+
+static bool trans_cv_cmpgt_sci_b(DisasContext *ctx, arg_cv_cmpgt_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, gen_helper_cmpgt_b);
+}
+
+static bool trans_cv_cmpge_h(DisasContext *ctx, arg_cv_cmpge_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmpge_h, NULL);
+}
+
+static bool trans_cv_cmpge_sc_h(DisasContext *ctx, arg_cv_cmpge_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, gen_helper_cmpge_h);
+}
+
+static bool trans_cv_cmpge_sci_h(DisasContext *ctx, arg_cv_cmpge_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, gen_helper_cmpge_h);
+}
+
+static bool trans_cv_cmpge_b(DisasContext *ctx, arg_cv_cmpge_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmpge_b, NULL);
+}
+
+static bool trans_cv_cmpge_sc_b(DisasContext *ctx, arg_cv_cmpge_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, gen_helper_cmpge_b);
+}
+
+static bool trans_cv_cmpge_sci_b(DisasContext *ctx, arg_cv_cmpge_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, gen_helper_cmpge_b);
+}
+
+static bool trans_cv_cmplt_h(DisasContext *ctx, arg_cv_cmplt_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmplt_h, NULL);
+}
+
+static bool trans_cv_cmplt_sc_h(DisasContext *ctx, arg_cv_cmplt_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, gen_helper_cmplt_h);
+}
+
+static bool trans_cv_cmplt_sci_h(DisasContext *ctx, arg_cv_cmplt_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, gen_helper_cmplt_h);
+}
+
+static bool trans_cv_cmplt_b(DisasContext *ctx, arg_cv_cmplt_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmplt_b, NULL);
+}
+
+static bool trans_cv_cmplt_sc_b(DisasContext *ctx, arg_cv_cmplt_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, gen_helper_cmplt_b);
+}
+
+static bool trans_cv_cmplt_sci_b(DisasContext *ctx, arg_cv_cmplt_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, gen_helper_cmplt_b);
+}
+
+static bool trans_cv_cmple_h(DisasContext *ctx, arg_cv_cmple_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmple_h, NULL);
+}
+
+static bool trans_cv_cmple_sc_h(DisasContext *ctx, arg_cv_cmple_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, gen_helper_cmple_h);
+}
+
+static bool trans_cv_cmple_sci_h(DisasContext *ctx, arg_cv_cmple_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, gen_helper_cmple_h);
+}
+
+static bool trans_cv_cmple_b(DisasContext *ctx, arg_cv_cmple_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmple_b, NULL);
+}
+
+static bool trans_cv_cmple_sc_b(DisasContext *ctx, arg_cv_cmple_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, gen_helper_cmple_b);
+}
+
+static bool trans_cv_cmple_sci_b(DisasContext *ctx, arg_cv_cmple_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, gen_helper_cmple_b);
+}
+
+static bool trans_cv_cmpgtu_h(DisasContext *ctx, arg_cv_cmpgtu_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmpgtu_h, NULL);
+}
+
+static bool trans_cv_cmpgtu_sc_h(DisasContext *ctx, arg_cv_cmpgtu_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, gen_helper_cmpgtu_h);
+}
+
+static bool trans_cv_cmpgtu_sci_h(DisasContext *ctx, arg_cv_cmpgtu_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, gen_helper_cmpgtu_h);
+}
+
+static bool trans_cv_cmpgtu_b(DisasContext *ctx, arg_cv_cmpgtu_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmpgtu_b, NULL);
+}
+
+static bool trans_cv_cmpgtu_sc_b(DisasContext *ctx, arg_cv_cmpgtu_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, gen_helper_cmpgtu_b);
+}
+
+static bool trans_cv_cmpgtu_sci_b(DisasContext *ctx, arg_cv_cmpgtu_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, gen_helper_cmpgtu_b);
+}
+
+static bool trans_cv_cmpgeu_h(DisasContext *ctx, arg_cv_cmpgeu_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmpgeu_h, NULL);
+}
+
+static bool trans_cv_cmpgeu_sc_h(DisasContext *ctx, arg_cv_cmpgeu_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, gen_helper_cmpgeu_h);
+}
+
+static bool trans_cv_cmpgeu_sci_h(DisasContext *ctx, arg_cv_cmpgeu_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, gen_helper_cmpgeu_h);
+}
+
+static bool trans_cv_cmpgeu_b(DisasContext *ctx, arg_cv_cmpgeu_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmpgeu_b, NULL);
+}
+
+static bool trans_cv_cmpgeu_sc_b(DisasContext *ctx, arg_cv_cmpgeu_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, gen_helper_cmpgeu_b);
+}
+
+static bool trans_cv_cmpgeu_sci_b(DisasContext *ctx, arg_cv_cmpgeu_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, gen_helper_cmpgeu_b);
+}
+
+static bool trans_cv_cmpltu_h(DisasContext *ctx, arg_cv_cmpltu_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmpltu_h, NULL);
+}
+
+static bool trans_cv_cmpltu_sc_h(DisasContext *ctx, arg_cv_cmpltu_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, gen_helper_cmpltu_h);
+}
+
+static bool trans_cv_cmpltu_sci_h(DisasContext *ctx, arg_cv_cmpltu_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, gen_helper_cmpltu_h);
+}
+
+static bool trans_cv_cmpltu_b(DisasContext *ctx, arg_cv_cmpltu_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmpltu_b, NULL);
+}
+
+static bool trans_cv_cmpltu_sc_b(DisasContext *ctx, arg_cv_cmpltu_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, gen_helper_cmpltu_b);
+}
+
+static bool trans_cv_cmpltu_sci_b(DisasContext *ctx, arg_cv_cmpltu_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, gen_helper_cmpltu_b);
+}
+
+static bool trans_cv_cmpleu_h(DisasContext *ctx, arg_cv_cmpleu_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmpleu_h, NULL);
+}
+
+static bool trans_cv_cmpleu_sc_h(DisasContext *ctx, arg_cv_cmpleu_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, gen_helper_cmpleu_h);
+}
+
+static bool trans_cv_cmpleu_sci_h(DisasContext *ctx, arg_cv_cmpleu_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, gen_helper_cmpleu_h);
+}
+
+static bool trans_cv_cmpleu_b(DisasContext *ctx, arg_cv_cmpleu_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_cmpleu_b, NULL);
+}
+
+static bool trans_cv_cmpleu_sc_b(DisasContext *ctx, arg_cv_cmpleu_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, gen_helper_cmpleu_b);
+}
+
+static bool trans_cv_cmpleu_sci_b(DisasContext *ctx, arg_cv_cmpleu_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, gen_helper_cmpleu_b);
+}
