@@ -1140,3 +1140,13 @@ DEF_HELPER_FLAGS_3(sm4ks, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl)
 
 /* Hardware Loop Function */
 DEF_HELPER_FLAGS_3(check_hwlp_body, TCG_CALL_NO_RWG, void, env, tl, tl)
+
+/* XPulp SIMD operation */
+DEF_HELPER_FLAGS_2(min_h, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+DEF_HELPER_FLAGS_2(min_b, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+DEF_HELPER_FLAGS_2(max_h, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+DEF_HELPER_FLAGS_2(max_b, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+DEF_HELPER_FLAGS_2(minu_h, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+DEF_HELPER_FLAGS_2(minu_b, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+DEF_HELPER_FLAGS_2(maxu_h, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+DEF_HELPER_FLAGS_2(maxu_b, TCG_CALL_NO_RWG_SE, tl, tl, tl)

@@ -15,6 +15,8 @@
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "tcg/tcg-op-gvec.h"
+#include "tcg/tcg-gvec-desc.h"
 
 #define REQUIRE_XCVMEM(ctx) do {          \
     if (!ctx->cfg_ptr->ext_xcvmem) {      \
@@ -24,6 +26,12 @@
 
 #define REQUIRE_XCVHWLP(ctx) do {         \
     if (!ctx->cfg_ptr->ext_xcvhwlp) {     \
+        return false;                     \
+    }                                     \
+} while (0)
+
+#define REQUIRE_XCVSIMD(ctx) do {         \
+    if (!ctx->cfg_ptr->ext_xcvsimd) {     \
         return false;                     \
     }                                     \
 } while (0)
@@ -309,4 +317,392 @@ static bool trans_cv_setupi(DisasContext *ctx, arg_cv_setupi *a)
     gen_helper_csrw(cpu_env, tcg_constant_i32(start_csr), start);
 
     return do_csr_post(ctx);
+}
+
+static bool trans_cv_add_h(DisasContext *ctx, arg_cv_add_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, tcg_gen_vec_add16_tl, NULL);
+}
+
+static bool gen_simd_scalar(DisasContext *ctx, arg_r *a, DisasExtend ext,
+                            unsigned vece, void (*func)(TCGv, TCGv, TCGv))
+{
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src1 = get_gpr(ctx, a->rs1, ext);
+    TCGv src2 = get_gpr(ctx, a->rs2, ext);
+    TCGv t0 = tcg_temp_new();
+
+    tcg_gen_dup_tl(vece, t0, src2);
+    func(dest, src1, t0);
+    gen_set_gpr(ctx, a->rd, dest);
+
+    tcg_temp_free(t0);
+    return true;
+}
+
+static bool trans_cv_add_sc_h(DisasContext *ctx, arg_cv_add_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, tcg_gen_vec_add16_tl);
+}
+
+static bool gen_simd_scalar_imm(DisasContext *ctx, arg_i *a, DisasExtend ext,
+                                unsigned vece, void (*func)(TCGv, TCGv, TCGv))
+{
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src1 = get_gpr(ctx, a->rs1, ext);
+    TCGv src2 = tcg_constant_tl(a->imm);
+    TCGv t0 = tcg_temp_new();
+
+    tcg_gen_dup_tl(vece, t0, src2);
+    func(dest, src1, t0);
+    gen_set_gpr(ctx, a->rd, dest);
+
+    tcg_temp_free(t0);
+    return true;
+}
+
+static bool trans_cv_add_sci_h(DisasContext *ctx, arg_cv_add_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, tcg_gen_vec_add16_tl);
+}
+
+static bool trans_cv_add_b(DisasContext *ctx, arg_cv_add_b *a)
+{
+    return gen_arith(ctx, a, EXT_NONE, tcg_gen_vec_add8_tl, NULL);
+}
+
+static bool trans_cv_add_sc_b(DisasContext *ctx, arg_cv_add_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, tcg_gen_vec_add8_tl);
+}
+
+static bool trans_cv_add_sci_b(DisasContext *ctx, arg_cv_add_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, tcg_gen_vec_add8_tl);
+}
+
+static bool gen_simd_div(DisasContext *ctx, arg_r *a, DisasExtend ext,
+                         int32_t shift, void (*func)(TCGv, TCGv, TCGv),
+                         void (*shift_func)(TCGv, TCGv, target_long))
+{
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src1 = get_gpr(ctx, a->rs1, ext);
+    TCGv src2 = get_gpr(ctx, a->rs2, ext);
+
+    func(dest, src1, src2);
+    shift_func(dest, dest, shift);
+
+    gen_set_gpr(ctx, a->rd, dest);
+    return true;
+}
+
+static bool trans_cv_sub_h(DisasContext *ctx, arg_cv_sub_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, tcg_gen_vec_sub16_tl, NULL);
+}
+
+static bool trans_cv_sub_sc_h(DisasContext *ctx, arg_cv_sub_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, tcg_gen_vec_sub16_tl);
+}
+
+static bool trans_cv_sub_sci_h(DisasContext *ctx, arg_cv_sub_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, tcg_gen_vec_sub16_tl);
+}
+
+static bool trans_cv_sub_b(DisasContext *ctx, arg_cv_sub_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, tcg_gen_vec_sub8_tl, NULL);
+}
+
+static bool trans_cv_sub_sc_b(DisasContext *ctx, arg_cv_sub_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, tcg_gen_vec_sub8_tl);
+}
+
+static bool trans_cv_sub_sci_b(DisasContext *ctx, arg_cv_sub_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, tcg_gen_vec_sub8_tl);
+}
+
+static bool trans_cv_avg_h(DisasContext *ctx, arg_cv_avg_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_div(ctx, a, EXT_NONE, 1, tcg_gen_vec_add16_tl,
+                        tcg_gen_vec_sar16i_tl);
+}
+
+static bool gen_simd_div_scalar(DisasContext *ctx, arg_r *a, DisasExtend ext,
+                                int32_t shift, unsigned vece,
+                                void (*func)(TCGv, TCGv, TCGv),
+                                void (*shift_func)(TCGv, TCGv, target_long))
+{
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src1 = get_gpr(ctx, a->rs1, ext);
+    TCGv src2 = get_gpr(ctx, a->rs2, ext);
+    TCGv t0 = tcg_temp_new();
+
+    tcg_gen_dup_tl(vece, t0, src2);
+    func(dest, src1, t0);
+    shift_func(dest, dest, shift);
+
+    gen_set_gpr(ctx, a->rd, dest);
+    tcg_temp_free(t0);
+    return true;
+}
+
+static bool trans_cv_avg_sc_h(DisasContext *ctx, arg_cv_avg_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_div_scalar(ctx, a, EXT_NONE, 1, MO_16,
+                               tcg_gen_vec_add16_tl, tcg_gen_vec_sar16i_tl);
+}
+
+static bool gen_simd_div_scalar_imm(DisasContext *ctx, arg_i *a,
+                                    DisasExtend ext, int32_t shift,
+                                    unsigned vece,
+                                    void (*func)(TCGv, TCGv, TCGv),
+                                    void (*shift_func)(TCGv, TCGv,
+                                                       target_long))
+{
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src1 = get_gpr(ctx, a->rs1, ext);
+    TCGv src2 = tcg_constant_tl(a->imm);
+    TCGv t0 = tcg_temp_new();
+
+    tcg_gen_dup_tl(vece, t0, src2);
+    func(dest, src1, t0);
+    shift_func(dest, dest, shift);
+
+    gen_set_gpr(ctx, a->rd, dest);
+    tcg_temp_free(t0);
+    return true;
+}
+
+static bool trans_cv_avg_sci_h(DisasContext *ctx, arg_cv_avg_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_div_scalar_imm(ctx, a, EXT_NONE, 1, MO_16,
+                                   tcg_gen_vec_add16_tl,
+                                   tcg_gen_vec_sar16i_tl);
+}
+
+static bool trans_cv_avg_b(DisasContext *ctx, arg_cv_avg_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_div(ctx, a, EXT_NONE, 1, tcg_gen_vec_add8_tl,
+                        tcg_gen_vec_sar8i_tl);
+}
+
+static bool trans_cv_avg_sc_b(DisasContext *ctx, arg_cv_avg_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_div_scalar(ctx, a, EXT_NONE, 1, MO_8,
+                               tcg_gen_vec_add8_tl, tcg_gen_vec_sar8i_tl);
+}
+
+static bool trans_cv_avg_sci_b(DisasContext *ctx, arg_cv_avg_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_div_scalar_imm(ctx, a, EXT_NONE, 1, MO_8,
+                                   tcg_gen_vec_add8_tl, tcg_gen_vec_sar8i_tl);
+}
+
+static bool trans_cv_avgu_h(DisasContext *ctx, arg_cv_avgu_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_div(ctx, a, EXT_NONE, 1, tcg_gen_vec_add16_tl,
+                        tcg_gen_vec_shr16i_tl);
+}
+
+static bool trans_cv_avgu_sc_h(DisasContext *ctx, arg_cv_avgu_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_div_scalar(ctx, a, EXT_NONE, 1, MO_16,
+                               tcg_gen_vec_add16_tl, tcg_gen_vec_shr16i_tl);
+}
+
+static bool trans_cv_avgu_sci_h(DisasContext *ctx, arg_cv_avgu_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_div_scalar_imm(ctx, a, EXT_NONE, 1, MO_16,
+                                   tcg_gen_vec_add16_tl,
+                                   tcg_gen_vec_shr16i_tl);
+}
+
+static bool trans_cv_avgu_b(DisasContext *ctx, arg_cv_avgu_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_div(ctx, a, EXT_NONE, 1, tcg_gen_vec_add8_tl,
+                        tcg_gen_vec_shr8i_tl);
+}
+
+static bool trans_cv_avgu_sc_b(DisasContext *ctx, arg_cv_avgu_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_div_scalar(ctx, a, EXT_NONE, 1, MO_8,
+                               tcg_gen_vec_add8_tl, tcg_gen_vec_shr8i_tl);
+}
+
+static bool trans_cv_avgu_sci_b(DisasContext *ctx, arg_cv_avgu_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_div_scalar_imm(ctx, a, EXT_NONE, 1, MO_8,
+                                   tcg_gen_vec_add8_tl, tcg_gen_vec_shr8i_tl);
+}
+
+static bool trans_cv_min_h(DisasContext *ctx, arg_cv_min_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_min_h, NULL);
+}
+
+static bool trans_cv_min_sc_h(DisasContext *ctx, arg_cv_min_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, gen_helper_min_h);
+}
+
+static bool trans_cv_min_sci_h(DisasContext *ctx, arg_cv_min_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, gen_helper_min_h);
+}
+
+static bool trans_cv_min_b(DisasContext *ctx, arg_cv_min_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_min_b, NULL);
+}
+
+static bool trans_cv_min_sc_b(DisasContext *ctx, arg_cv_min_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, gen_helper_min_b);
+}
+
+static bool trans_cv_min_sci_b(DisasContext *ctx, arg_cv_min_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, gen_helper_min_b);
+}
+
+static bool trans_cv_minu_h(DisasContext *ctx, arg_cv_minu_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_minu_h, NULL);
+}
+
+static bool trans_cv_minu_sc_h(DisasContext *ctx, arg_cv_minu_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, gen_helper_minu_h);
+}
+
+static bool trans_cv_minu_sci_h(DisasContext *ctx, arg_cv_minu_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, gen_helper_minu_h);
+}
+
+static bool trans_cv_minu_b(DisasContext *ctx, arg_cv_minu_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_minu_b, NULL);
+}
+
+static bool trans_cv_minu_sc_b(DisasContext *ctx, arg_cv_minu_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, gen_helper_minu_b);
+}
+
+static bool trans_cv_minu_sci_b(DisasContext *ctx, arg_cv_minu_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, gen_helper_minu_b);
+}
+
+static bool trans_cv_max_h(DisasContext *ctx, arg_cv_max_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_max_h, NULL);
+}
+
+static bool trans_cv_max_sc_h(DisasContext *ctx, arg_cv_max_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, gen_helper_max_h);
+}
+
+static bool trans_cv_max_sci_h(DisasContext *ctx, arg_cv_max_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, gen_helper_max_h);
+}
+
+static bool trans_cv_max_b(DisasContext *ctx, arg_cv_max_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_max_b, NULL);
+}
+
+static bool trans_cv_max_sc_b(DisasContext *ctx, arg_cv_max_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, gen_helper_max_b);
+}
+
+static bool trans_cv_max_sci_b(DisasContext *ctx, arg_cv_max_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, gen_helper_max_b);
+}
+
+static bool trans_cv_maxu_h(DisasContext *ctx, arg_cv_maxu_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_maxu_h, NULL);
+}
+
+static bool trans_cv_maxu_sc_h(DisasContext *ctx, arg_cv_maxu_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, gen_helper_maxu_h);
+}
+
+static bool trans_cv_maxu_sci_h(DisasContext *ctx, arg_cv_maxu_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, gen_helper_maxu_h);
+}
+
+static bool trans_cv_maxu_b(DisasContext *ctx, arg_cv_maxu_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_maxu_b, NULL);
+}
+
+static bool trans_cv_maxu_sc_b(DisasContext *ctx, arg_cv_maxu_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, gen_helper_maxu_b);
+}
+
+static bool trans_cv_maxu_sci_b(DisasContext *ctx, arg_cv_maxu_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, gen_helper_maxu_b);
 }
