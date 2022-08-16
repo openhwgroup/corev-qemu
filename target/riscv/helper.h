@@ -1167,3 +1167,10 @@ DEF_HELPER_FLAGS_2(dotusp_b, TCG_CALL_NO_RWG_SE, tl, tl, tl)
 
 DEF_HELPER_FLAGS_2(dotsp_h, TCG_CALL_NO_RWG_SE, tl, tl, tl)
 DEF_HELPER_FLAGS_2(dotsp_b, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+
+DEF_HELPER_FLAGS_2(shuffle_h, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+DEF_HELPER_FLAGS_2(shuffle_sc_h, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+DEF_HELPER_FLAGS_2(shuffle_b, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+DEF_HELPER_FLAGS_3(shuffle_sc_b, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl)
+DEF_HELPER_FLAGS_3(shuffle2_h, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl)
+DEF_HELPER_FLAGS_3(shuffle2_b, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl)

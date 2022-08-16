@@ -231,3 +231,86 @@ static inline void do_dotsp_b(void *vd, void *va, void *vb, uint8_t i)
     *d += (target_ulong)a[i] * b[i];
 }
 XPULP_SIMD(dotsp_b, 1);
+
+static inline void do_shuffle_h(void *vd, void *va, void *vb, uint8_t i)
+{
+    int16_t *d = vd, *a = va, *b = vb;
+
+    d[i] = a[b[i] & 0x1];
+}
+XPULP_SIMD(shuffle_h, 2);
+
+static inline void do_shuffle_sc_h(void *vd, void *va, void *vb, uint8_t i)
+{
+    int16_t *d = vd, *a = va, *b = vb;
+
+    d[i] = a[(b[0] >> i) & 0x1];
+}
+XPULP_SIMD(shuffle_sc_h, 2);
+
+static inline void do_shuffle_b(void *vd, void *va, void *vb, uint8_t i)
+{
+    int8_t *d = vd, *a = va, *b = vb;
+
+    d[i] = a[b[i] & 0x3];
+}
+XPULP_SIMD(shuffle_b, 1);
+
+typedef void SIMDArith3(void *, void *, void *, void *, uint8_t);
+static inline target_ulong xpulp_simd3(target_ulong a, target_ulong b,
+                                       target_ulong c, uint8_t size,
+                                       SIMDArith3 *fn)
+{
+    int i, passes = sizeof(target_ulong) / size;
+    target_ulong result = 0;
+
+    for (i = 0; i < passes; i++) {
+        fn(&result, &a, &b, &c, i);
+    }
+    return result;
+}
+
+#define XPULP_SIMD3(NAME, OPSIZE)                                          \
+target_ulong HELPER(NAME)(target_ulong a, target_ulong b, target_ulong c)  \
+{                                                                          \
+    return xpulp_simd3(a, b, c, OPSIZE, (SIMDArith3 *)do_##NAME);          \
+}
+
+static inline void do_shuffle_sc_b(void *vd, void *va, void *vb, void *vc,
+                                   uint8_t i)
+{
+    int8_t *d = vd, *a = va, *b = vb, *c = vc;
+
+    if (i == 3) {
+        d[i] = a[c[0]];
+    } else {
+        d[i] = a[(b[0] >> (2 * i)) & 0x3];
+    }
+}
+XPULP_SIMD3(shuffle_sc_b, 1);
+
+static inline void do_shuffle2_h(void *vd, void *va, void *vb, void *vc,
+                                 uint8_t i)
+{
+    int16_t *d = vd, *a = va, *b = vb, *c = vc;
+
+    if (b[i] & 0x2) {
+        d[i] = a[b[i] & 0x1];
+    } else {
+        d[i] = c[b[i] & 0x1];
+    }
+}
+XPULP_SIMD3(shuffle2_h, 2);
+
+static inline void do_shuffle2_b(void *vd, void *va, void *vb, void *vc,
+                                 uint8_t i)
+{
+    int8_t *d = vd, *a = va, *b = vb, *c = vc;
+
+    if (b[i] & 0x4) {
+        d[i] = a[b[i] & 0x3];
+    } else {
+        d[i] = c[b[i] & 0x3];
+    }
+}
+XPULP_SIMD3(shuffle2_b, 1);

@@ -1284,3 +1284,129 @@ GEN_SDOT_SCI_TRANS(cv_sdotsp_sci_h, dotsp_h, EXT_NONE, MO_16)
 GEN_SDOT_TRANS(cv_sdotsp_b, dotsp_b, EXT_NONE)
 GEN_SDOT_SC_TRANS(cv_sdotsp_sc_b, dotsp_b, EXT_NONE, MO_8)
 GEN_SDOT_SCI_TRANS(cv_sdotsp_sci_b, dotsp_b, EXT_NONE, MO_8)
+
+static bool trans_cv_shuffle_h(DisasContext *ctx, arg_cv_shuffle_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_shuffle_h, NULL);
+}
+
+static bool trans_cv_shuffle_sci_h(DisasContext *ctx, arg_cv_shuffle_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith_imm_tl(ctx, a, EXT_NONE, gen_helper_shuffle_sc_h, NULL);
+}
+
+static bool trans_cv_shuffle_b(DisasContext *ctx, arg_cv_shuffle_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_shuffle_b, NULL);
+}
+
+static inline bool gen_simd_shuf_sci(DisasContext *ctx, arg_i *a,
+                                     target_ulong i, DisasExtend ext,
+                                     void (*fn)(TCGv, TCGv, TCGv, TCGv))
+{
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src1 = get_gpr(ctx, a->rs1, ext);
+    TCGv src2 = tcg_constant_tl(a->imm);
+
+    fn(dest, src1, src2, tcg_constant_tl(i));
+    gen_set_gpr(ctx, a->rd, dest);
+    return true;
+}
+
+#define GEN_SHUF_SCI_TRANS(NAME, FUNC, NUM, EXT)                  \
+static bool trans_##NAME(DisasContext *s, arg_i *a)               \
+{                                                                 \
+    REQUIRE_XCVSIMD(s);                                           \
+    return gen_simd_shuf_sci(s, a, NUM, EXT, gen_helper_##FUNC);  \
+}
+
+GEN_SHUF_SCI_TRANS(cv_shuffleI0_sci_b, shuffle_sc_b, 0, EXT_NONE)
+GEN_SHUF_SCI_TRANS(cv_shuffleI1_sci_b, shuffle_sc_b, 1, EXT_NONE)
+GEN_SHUF_SCI_TRANS(cv_shuffleI2_sci_b, shuffle_sc_b, 2, EXT_NONE)
+GEN_SHUF_SCI_TRANS(cv_shuffleI3_sci_b, shuffle_sc_b, 3, EXT_NONE)
+
+static inline bool gen_simd_shuf2(DisasContext *ctx, arg_r *a,
+                                  DisasExtend ext,
+                                  void (*fn)(TCGv, TCGv, TCGv, TCGv))
+{
+    TCGv tmp = tcg_temp_new();
+    TCGv dest = get_gpr(ctx, a->rd, ext);
+    TCGv src1 = get_gpr(ctx, a->rs1, ext);
+    TCGv src2 = get_gpr(ctx, a->rs2, ext);
+
+    fn(tmp, src1, src2, dest);
+    gen_set_gpr(ctx, a->rd, tmp);
+    tcg_temp_free(tmp);
+    return true;
+}
+
+#define GEN_SHUF2_TRANS(NAME, FUNC, EXT)                          \
+static bool trans_##NAME(DisasContext *s, arg_r *a)               \
+{                                                                 \
+    REQUIRE_XCVSIMD(s);                                           \
+    return gen_simd_shuf2(s, a, EXT, gen_helper_##FUNC);          \
+}
+
+GEN_SHUF2_TRANS(cv_shuffle2_h, shuffle2_h, EXT_NONE)
+GEN_SHUF2_TRANS(cv_shuffle2_b, shuffle2_b, EXT_NONE)
+
+static bool trans_cv_pack(DisasContext *ctx, arg_cv_pack *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT_NONE);
+    TCGv src2 = get_gpr(ctx, a->rs2, EXT_NONE);
+    TCGv tmp = tcg_temp_new();
+
+    tcg_gen_ext16u_tl(tmp, src2);
+    tcg_gen_shli_tl(dest, src1, 16);
+    tcg_gen_or_tl(dest, dest, tmp);
+    gen_set_gpr(ctx, a->rd, dest);
+    tcg_temp_free(tmp);
+    return true;
+}
+
+static bool trans_cv_pack_h(DisasContext *ctx, arg_cv_pack_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT_NONE);
+    TCGv src2 = get_gpr(ctx, a->rs2, EXT_NONE);
+    TCGv tmp = tcg_temp_new();
+
+    tcg_gen_andi_tl(tmp, src1, 0xffff0000);
+    tcg_gen_shri_tl(dest, src2, 16);
+    tcg_gen_or_tl(dest, dest, tmp);
+    gen_set_gpr(ctx, a->rd, dest);
+    tcg_temp_free(tmp);
+    return true;
+}
+
+static bool trans_cv_packhi_b(DisasContext *ctx, arg_cv_packhi_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    TCGv dest = get_gpr(ctx, a->rd, EXT_NONE);
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT_NONE);
+    TCGv src2 = get_gpr(ctx, a->rs2, EXT_NONE);
+
+    tcg_gen_deposit_tl(dest, dest, src1, 24, 8);
+    tcg_gen_deposit_tl(dest, dest, src2, 16, 8);
+    gen_set_gpr(ctx, a->rd, dest);
+    return true;
+}
+
+static bool trans_cv_packlo_b(DisasContext *ctx, arg_cv_packlo_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    TCGv dest = get_gpr(ctx, a->rd, EXT_NONE);
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT_NONE);
+    TCGv src2 = get_gpr(ctx, a->rs2, EXT_NONE);
+
+    tcg_gen_deposit_tl(dest, dest, src1, 8, 8);
+    tcg_gen_deposit_tl(dest, dest, src2, 0, 8);
+    gen_set_gpr(ctx, a->rd, dest);
+    return true;
+}
