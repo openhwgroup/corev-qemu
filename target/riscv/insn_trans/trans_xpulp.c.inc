@@ -1083,3 +1083,204 @@ static bool trans_cv_insert_b(DisasContext *ctx, arg_cv_extract_b *a)
     gen_set_gpr(ctx, a->rd, dest);
     return true;
 }
+
+static bool trans_cv_dotup_h(DisasContext *ctx, arg_cv_dotup_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_dotup_h, NULL);
+}
+
+static bool trans_cv_dotup_sc_h(DisasContext *ctx, arg_cv_dotup_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, gen_helper_dotup_h);
+}
+
+static bool trans_cv_dotup_sci_h(DisasContext *ctx, arg_cv_dotup_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, gen_helper_dotup_h);
+}
+
+static bool trans_cv_dotup_b(DisasContext *ctx, arg_cv_dotup_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_dotup_b, NULL);
+}
+
+static bool trans_cv_dotup_sc_b(DisasContext *ctx, arg_cv_dotup_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, gen_helper_dotup_b);
+}
+
+static bool trans_cv_dotup_sci_b(DisasContext *ctx, arg_cv_dotup_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, gen_helper_dotup_b);
+}
+
+static bool trans_cv_dotusp_h(DisasContext *ctx, arg_cv_dotusp_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_dotusp_h, NULL);
+}
+
+static bool trans_cv_dotusp_sc_h(DisasContext *ctx, arg_cv_dotusp_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, gen_helper_dotusp_h);
+}
+
+static bool trans_cv_dotusp_sci_h(DisasContext *ctx, arg_cv_dotusp_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, gen_helper_dotusp_h);
+}
+
+static bool trans_cv_dotusp_b(DisasContext *ctx, arg_cv_dotusp_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_dotusp_b, NULL);
+}
+
+static bool trans_cv_dotusp_sc_b(DisasContext *ctx, arg_cv_dotusp_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, gen_helper_dotusp_b);
+}
+
+static bool trans_cv_dotusp_sci_b(DisasContext *ctx, arg_cv_dotusp_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, gen_helper_dotusp_b);
+}
+
+static bool trans_cv_dotsp_h(DisasContext *ctx, arg_cv_dotsp_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_dotsp_h, NULL);
+}
+
+static bool trans_cv_dotsp_sc_h(DisasContext *ctx, arg_cv_dotsp_sc_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_16, gen_helper_dotsp_h);
+}
+
+static bool trans_cv_dotsp_sci_h(DisasContext *ctx, arg_cv_dotsp_sci_h *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_16, gen_helper_dotsp_h);
+}
+
+static bool trans_cv_dotsp_b(DisasContext *ctx, arg_cv_dotsp_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_arith(ctx, a, EXT_NONE, gen_helper_dotsp_b, NULL);
+}
+
+static bool trans_cv_dotsp_sc_b(DisasContext *ctx, arg_cv_dotsp_sc_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar(ctx, a, EXT_NONE, MO_8, gen_helper_dotsp_b);
+}
+
+static bool trans_cv_dotsp_sci_b(DisasContext *ctx, arg_cv_dotsp_sci_b *a)
+{
+    REQUIRE_XCVSIMD(ctx);
+    return gen_simd_scalar_imm(ctx, a, EXT_NONE, MO_8, gen_helper_dotsp_b);
+}
+
+static inline bool gen_simd_sdot(DisasContext *ctx, arg_r *a, DisasExtend ext,
+                                 void (*fn)(TCGv, TCGv, TCGv))
+{
+    TCGv tmp = tcg_temp_new();
+    TCGv dest = get_gpr(ctx, a->rd, ext);
+    TCGv src1 = get_gpr(ctx, a->rs1, ext);
+    TCGv src2 = get_gpr(ctx, a->rs2, ext);
+
+    fn(tmp, src1, src2);
+    tcg_gen_add_tl(tmp, dest, tmp);
+    gen_set_gpr(ctx, a->rd, tmp);
+
+    tcg_temp_free(tmp);
+    return true;
+}
+
+static inline bool gen_simd_sdot_sc(DisasContext *ctx, arg_r *a,
+                                    DisasExtend ext, unsigned vece,
+                                    void (*fn)(TCGv, TCGv, TCGv))
+{
+    TCGv tmp = tcg_temp_new();
+    TCGv dest = get_gpr(ctx, a->rd, ext);
+    TCGv src1 = get_gpr(ctx, a->rs1, ext);
+    TCGv src2 = get_gpr(ctx, a->rs2, ext);
+
+    tcg_gen_dup_tl(vece, tmp, src2);
+    fn(tmp, src1, tmp);
+    tcg_gen_add_tl(tmp, dest, tmp);
+    gen_set_gpr(ctx, a->rd, tmp);
+    tcg_temp_free(tmp);
+
+    return true;
+}
+
+static inline bool gen_simd_sdot_sci(DisasContext *ctx, arg_i *a,
+                                     DisasExtend ext, unsigned vece,
+                                     void (*fn)(TCGv, TCGv, TCGv))
+{
+    TCGv tmp = tcg_temp_new();
+    TCGv dest = get_gpr(ctx, a->rd, ext);
+    TCGv src1 = get_gpr(ctx, a->rs1, ext);
+    TCGv src2 = tcg_constant_tl(dup_const_tl(vece, a->imm));
+
+    fn(tmp, src1, src2);
+    tcg_gen_add_tl(tmp, dest, tmp);
+    gen_set_gpr(ctx, a->rd, tmp);
+
+    tcg_temp_free(tmp);
+    return true;
+}
+
+#define GEN_SDOT_TRANS(NAME, FUNC, EXT)                         \
+static bool trans_##NAME(DisasContext *s, arg_r *a)             \
+{                                                               \
+    REQUIRE_XCVSIMD(s);                                         \
+    return gen_simd_sdot(s, a, EXT, gen_helper_##FUNC);         \
+}
+
+#define GEN_SDOT_SC_TRANS(NAME, FUNC, EXT, M)                   \
+static bool trans_##NAME(DisasContext *s, arg_r *a)             \
+{                                                               \
+    REQUIRE_XCVSIMD(s);                                         \
+    return gen_simd_sdot_sc(s, a, EXT, M, gen_helper_##FUNC);   \
+}
+
+#define GEN_SDOT_SCI_TRANS(NAME, FUNC, EXT, M)                  \
+static bool trans_##NAME(DisasContext *s, arg_i *a)             \
+{                                                               \
+    REQUIRE_XCVSIMD(s);                                         \
+    return gen_simd_sdot_sci(s, a, EXT, M, gen_helper_##FUNC);  \
+}
+
+GEN_SDOT_TRANS(cv_sdotup_h, dotup_h, EXT_NONE)
+GEN_SDOT_SC_TRANS(cv_sdotup_sc_h, dotup_h, EXT_NONE, MO_16)
+GEN_SDOT_SCI_TRANS(cv_sdotup_sci_h, dotup_h, EXT_NONE, MO_16)
+GEN_SDOT_TRANS(cv_sdotup_b, dotup_b, EXT_NONE)
+GEN_SDOT_SC_TRANS(cv_sdotup_sc_b, dotup_b, EXT_NONE, MO_8)
+GEN_SDOT_SCI_TRANS(cv_sdotup_sci_b, dotup_b, EXT_NONE, MO_8)
+
+GEN_SDOT_TRANS(cv_sdotusp_h, dotusp_h, EXT_NONE)
+GEN_SDOT_SC_TRANS(cv_sdotusp_sc_h, dotusp_h, EXT_NONE, MO_16)
+GEN_SDOT_SCI_TRANS(cv_sdotusp_sci_h, dotusp_h, EXT_NONE, MO_16)
+GEN_SDOT_TRANS(cv_sdotusp_b, dotusp_b, EXT_NONE)
+GEN_SDOT_SC_TRANS(cv_sdotusp_sc_b, dotusp_b, EXT_NONE, MO_8)
+GEN_SDOT_SCI_TRANS(cv_sdotusp_sci_b, dotusp_b, EXT_NONE, MO_8)
+
+GEN_SDOT_TRANS(cv_sdotsp_h, dotsp_h, EXT_NONE)
+GEN_SDOT_SC_TRANS(cv_sdotsp_sc_h, dotsp_h, EXT_NONE, MO_16)
+GEN_SDOT_SCI_TRANS(cv_sdotsp_sci_h, dotsp_h, EXT_NONE, MO_16)
+GEN_SDOT_TRANS(cv_sdotsp_b, dotsp_b, EXT_NONE)
+GEN_SDOT_SC_TRANS(cv_sdotsp_sc_b, dotsp_b, EXT_NONE, MO_8)
+GEN_SDOT_SCI_TRANS(cv_sdotsp_sci_b, dotsp_b, EXT_NONE, MO_8)

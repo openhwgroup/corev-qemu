@@ -1157,3 +1157,13 @@ DEF_HELPER_FLAGS_2(sra_h, TCG_CALL_NO_RWG_SE, tl, tl, tl)
 DEF_HELPER_FLAGS_2(sra_b, TCG_CALL_NO_RWG_SE, tl, tl, tl)
 DEF_HELPER_FLAGS_2(shl_h, TCG_CALL_NO_RWG_SE, tl, tl, tl)
 DEF_HELPER_FLAGS_2(shl_b, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+
+/* XPulp SIMD Dot Product Instructions */
+DEF_HELPER_FLAGS_2(dotup_h, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+DEF_HELPER_FLAGS_2(dotup_b, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+
+DEF_HELPER_FLAGS_2(dotusp_h, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+DEF_HELPER_FLAGS_2(dotusp_b, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+
+DEF_HELPER_FLAGS_2(dotsp_h, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+DEF_HELPER_FLAGS_2(dotsp_b, TCG_CALL_NO_RWG_SE, tl, tl, tl)

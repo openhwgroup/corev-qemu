@@ -175,3 +175,59 @@ static inline void do_shl_b(void *vd, void *va, void *vb, uint8_t i)
     d[i] = a[i] << b[i];
 }
 XPULP_SIMD(shl_b, 1);
+
+static inline void do_dotup_h(void *vd, void *va, void *vb, uint8_t i)
+{
+    uint16_t *a = va, *b = vb;
+    target_ulong *d = vd;
+
+    *d += (target_ulong)a[i] * b[i];
+}
+XPULP_SIMD(dotup_h, 2);
+
+static inline void do_dotup_b(void *vd, void *va, void *vb, uint8_t i)
+{
+    uint8_t *a = va, *b = vb;
+    target_ulong *d = vd;
+
+    *d += (target_ulong)a[i] * b[i];
+}
+XPULP_SIMD(dotup_b, 1);
+
+static inline void do_dotusp_h(void *vd, void *va, void *vb, uint8_t i)
+{
+    uint16_t *a = va;
+    int16_t *b = vb;
+    target_ulong *d = vd;
+
+    *d += (target_ulong)a[i] * b[i];
+}
+XPULP_SIMD(dotusp_h, 2);
+
+static inline void do_dotusp_b(void *vd, void *va, void *vb, uint8_t i)
+{
+    uint8_t *a = va;
+    int8_t *b = vb;
+    target_ulong *d = vd;
+
+    *d += (target_ulong)a[i] * b[i];
+}
+XPULP_SIMD(dotusp_b, 1);
+
+static inline void do_dotsp_h(void *vd, void *va, void *vb, uint8_t i)
+{
+    int16_t *a = va, *b = vb;
+    target_ulong *d = vd;
+
+    *d += (target_ulong)a[i] * b[i];
+}
+XPULP_SIMD(dotsp_h, 2);
+
+static inline void do_dotsp_b(void *vd, void *va, void *vb, uint8_t i)
+{
+    int8_t *a = va, *b = vb;
+    target_ulong *d = vd;
+
+    *d += (target_ulong)a[i] * b[i];
+}
+XPULP_SIMD(dotsp_b, 1);
