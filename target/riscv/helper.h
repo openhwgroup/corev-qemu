@@ -1208,3 +1208,13 @@ DEF_HELPER_FLAGS_5(macuN, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl, tl, tl)
 DEF_HELPER_FLAGS_5(macsN, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl, tl, tl)
 DEF_HELPER_FLAGS_5(macuRN, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl, tl, tl)
 DEF_HELPER_FLAGS_5(macsRN, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl, tl, tl)
+
+DEF_HELPER_FLAGS_2(extract, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+DEF_HELPER_FLAGS_2(extractu, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+DEF_HELPER_FLAGS_3(insert, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl)
+DEF_HELPER_FLAGS_2(bclr, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+DEF_HELPER_FLAGS_2(bset, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+DEF_HELPER_FLAGS_2(bitrev, TCG_CALL_NO_RWG_SE, tl, tl, tl)
+
+DEF_HELPER_FLAGS_1(fl1, TCG_CALL_NO_RWG_SE, tl, tl)
+DEF_HELPER_FLAGS_1(clb, TCG_CALL_NO_RWG_SE, tl, tl)

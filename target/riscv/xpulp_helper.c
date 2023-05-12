@@ -460,3 +460,141 @@ target_ulong HELPER(macsRN)(target_ulong a, target_ulong b, target_ulong c,
     result = (target_long)(s1[i] * s2[i] + c + (1 << (d - 1))) >> d;
     return result;
 }
+
+target_ulong HELPER(extract)(target_ulong a, target_ulong b)
+{
+    uint32_t is2 = b & 0x1F;
+    uint32_t is3 = (b >> 5) & 0x1F;
+    uint32_t msb = is2 + is3;
+    int32_t ret;
+
+    msb = msb > 31 ? 31 : msb;
+    ret = ((int32_t)a << (31 - msb)) >> (31 + is2 - msb);
+    return  ret;
+}
+
+target_ulong HELPER(extractu)(target_ulong a, target_ulong b)
+{
+    uint32_t is2 = b & 0x1F;
+    uint32_t is3 = (b >> 5) & 0x1F;
+    uint32_t msb = is2 + is3;
+    uint32_t ret;
+
+    msb = msb > 31 ? 31 : msb;
+    ret = ((uint32_t)a << (31 - msb)) >> (31 + is2 - msb);
+    return  ret;
+}
+
+target_ulong HELPER(insert)(target_ulong a, target_ulong b, target_ulong c)
+{
+    uint32_t is2 = b & 0x1F;
+    uint32_t is3 = (b >> 5) & 0x1F;
+    uint32_t lsb = is2 + is3 > 31 ? is2 + is3 - 32 : 0;
+    uint32_t mask = (~(0xfffffffe << is3)) << is2;
+    uint32_t field = a << (is2 - lsb);
+
+    return (c & ~mask) | (field & mask);
+}
+
+target_ulong HELPER(bclr)(target_ulong a, target_ulong b)
+{
+    uint32_t is2 = b & 0x1F;
+    uint32_t is3 = (b >> 5) & 0x1F;
+    uint32_t mask = (~(0xfffffffe << is3)) << is2;
+
+    return a & ~mask;
+}
+
+target_ulong HELPER(bset)(target_ulong a, target_ulong b)
+{
+    uint32_t is2 = b & 0x1F;
+    uint32_t is3 = (b >> 5) & 0x1F;
+    uint32_t mask = (~(0xfffffffe << is3)) << is2;
+
+    return a | mask;
+}
+
+static uint32_t revpowerbits(uint32_t x, uint32_t shamt)
+{
+    if (shamt &  1) {
+        x = ((x & 0x55555555) <<  1) | ((x & 0xAAAAAAAA) >>  1);
+    }
+
+    if (shamt &  2) {
+        x = ((x & 0x33333333) <<  2) | ((x & 0xCCCCCCCC) >>  2);
+    }
+
+    if (shamt &  4) {
+        x = ((x & 0x0F0F0F0F) <<  4) | ((x & 0xF0F0F0F0) >>  4);
+    }
+
+    if (shamt &  8) {
+        x = ((x & 0x00FF00FF) <<  8) | ((x & 0xFF00FF00) >>  8);
+    }
+
+    if (shamt & 16) {
+        x = ((x & 0x0000FFFF) << 16) | ((x & 0xFFFF0000) >> 16);
+    }
+    return x;
+}
+
+static uint32_t rev3bits(uint32_t rs1)
+{
+    uint32_t x = rs1 >> 5;
+
+    x = ((x & 0b111000000111000000111000000LL) >> 6) |
+        ((x & 0b000111000000111000000111000LL)) |
+        ((x & 0b000000111000000111000000111LL) << 6);
+    x = ((x & 0b111111111000000000000000000LL) >> 18) |
+        ((x & 0b000000000111111111000000000LL)) |
+        ((x & 0b000000000000000000111111111LL) << 18);
+    x |= (rs1 & 0x3) << 30;
+    x |= (rs1 & 0x1C) << 25;
+    return x;
+}
+
+target_ulong HELPER(bitrev)(target_ulong a, target_ulong b)
+{
+    uint32_t is2 = b & 0x1F;
+    uint32_t is3 = (b >> 5) & 0x3;
+    uint32_t res = a << is2;
+
+    switch (is3) {
+    case 0:
+        res = revpowerbits(res, 0b11111);
+        break;
+    case 1:
+        res = revpowerbits(res, 0b11110);
+        break;
+    default:
+        res = rev3bits(res);
+        break;
+    }
+    return res;
+}
+
+static target_ulong do_clz(target_ulong a)
+{
+    int i;
+
+    for (i = 0; i < 32; i++) {
+        if (a & (1 << (31 - i))) {
+            break;
+        }
+    }
+    return i;
+}
+
+target_ulong HELPER(fl1)(target_ulong a)
+{
+    target_ulong t = do_clz(a);
+
+    return t == 32 ? 32 : 31 - t;
+}
+
+target_ulong HELPER(clb)(target_ulong a)
+{
+    target_ulong  t = a & (1 << 31) ? ~a : a;
+
+    return a == 0 ? 0 : do_clz(t) - 1;
+}
