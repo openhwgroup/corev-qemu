@@ -54,6 +54,12 @@
     }                                     \
 } while (0)
 
+#define REQUIRE_XCVBI(ctx) do {           \
+    if (!ctx->cfg_ptr->ext_xcvbi) {       \
+        return false;                     \
+    }                                     \
+} while (0)
+
 static bool gen_load_rr_tl(DisasContext *ctx, arg_r *a, MemOp memop,
                            bool postInc)
 {
@@ -2300,3 +2306,38 @@ GEN_ARITH_R_SHIFT_REG(cv_addRNr, add, sar, EXT_NONE)
 GEN_ARITH_R_SHIFT_REG(cv_adduRNr, add, shr, EXT_NONE)
 GEN_ARITH_R_SHIFT_REG(cv_subRNr, sub, sar, EXT_NONE)
 GEN_ARITH_R_SHIFT_REG(cv_subuRNr, sub, shr, EXT_NONE)
+
+static bool gen_bimm(DisasContext *ctx, arg_bimm *a, TCGCond cond)
+{
+    check_hwlp_body(ctx, HWLP_TYPE_JUMP_BR);
+    TCGLabel *l = gen_new_label();
+    TCGv src1 = get_gpr(ctx, a->rs1, EXT_NONE);
+    TCGv src2 = tcg_constant_tl(a->imm);
+
+    tcg_gen_brcond_tl(cond, src1, src2, l);
+    gen_goto_tb(ctx, 1, ctx->pc_succ_insn);
+
+    gen_set_label(l); /* branch taken */
+
+    if (!has_ext(ctx, RVC) && ((ctx->base.pc_next + a->offset) & 0x3)) {
+        /* misaligned */
+        gen_exception_inst_addr_mis(ctx);
+    } else {
+        gen_goto_tb(ctx, 0, ctx->base.pc_next + a->offset);
+    }
+    ctx->base.is_jmp = DISAS_NORETURN;
+
+    return true;
+}
+
+static bool trans_cv_beqimm(DisasContext *ctx, arg_cv_beqimm *a)
+{
+    REQUIRE_XCVBI(ctx);
+    return gen_bimm(ctx, a, TCG_COND_EQ);
+}
+
+static bool trans_cv_bneimm(DisasContext *ctx, arg_cv_bneimm *a)
+{
+    REQUIRE_XCVBI(ctx);
+    return gen_bimm(ctx, a, TCG_COND_NE);
+}

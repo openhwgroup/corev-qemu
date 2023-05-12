@@ -149,7 +149,8 @@ static bool has_xpulp_p(DisasContext *ctx  __attribute__((__unused__)))
 {
     return ctx->cfg_ptr->ext_xcvmem || ctx->cfg_ptr->ext_xcvhwlp ||
            ctx->cfg_ptr->ext_xcvsimd || ctx->cfg_ptr->ext_xcvmac ||
-           ctx->cfg_ptr->ext_xcvbitmanip || ctx->cfg_ptr->ext_xcvalu;
+           ctx->cfg_ptr->ext_xcvbitmanip || ctx->cfg_ptr->ext_xcvalu ||
+           ctx->cfg_ptr->ext_xcvbi;
 }
 
 #define MATERIALISE_EXT_PREDICATE(ext)  \

@@ -494,6 +494,7 @@ struct RISCVCPUConfig {
 
     /* Vendor-specific custom extensions */
     bool ext_xcvalu;
+    bool ext_xcvbi;
     bool ext_xcvbitmanip;
     bool ext_xcvhwlp;
     bool ext_xcvmac;

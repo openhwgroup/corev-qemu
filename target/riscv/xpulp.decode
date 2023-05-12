@@ -32,6 +32,8 @@
 %imm_l10  20:10
 %imm_l7   20:7
 %imm_i2   20:5
+%imm_s2   20:s5
+%imm_j2   31:s1 7:1 25:6 8:4   !function=ex_shift_1
 
 # Argument sets
 &i       imm rs1 rd      !extern
@@ -43,6 +45,7 @@
 &shl_r   rs1 imm  l
 &r2      rd rs1          !extern
 &mac     imm rs1 rs2 rd
+&bimm    imm rs1 offset
 
 # Formats
 @i         ............   ..... ... .....  ....... &i      imm=%imm_i      %rs1 %rd
@@ -59,6 +62,7 @@
 @b         .. .....  ..... ..... ... ..... ....... &i      imm=%imm_l10    %rs1 %rd
 @b2        .. .....  ..... ..... ... ..... ....... &i      imm=%imm_l7     %rs1 %rd
 @clip      ............   ..... ... .....  ....... &i      imm=%imm_i2     %rs1 %rd
+@bimm      ............   ..... ... .....  ....... &bimm   imm=%imm_s2     %rs1      offset=%imm_j2
 
 # *** Post-Incrementing Load & Store Instructions ***
 cv_lb_ripi   ............   ..... 000 ..... 0001011  @i
@@ -410,3 +414,7 @@ cv_subNr          1000100  ..... ..... 011 ..... 0101011  @r
 cv_subuNr         1000101  ..... ..... 011 ..... 0101011  @r
 cv_subRNr         1000110  ..... ..... 011 ..... 0101011  @r
 cv_subuRNr        1000111  ..... ..... 011 ..... 0101011  @r
+
+# *** Immediate Branch instructions ***
+cv_beqimm         ............   ..... 110 ..... 1100011  @bimm
+cv_bneimm         ............   ..... 111 ..... 1100011  @bimm
