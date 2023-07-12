@@ -75,7 +75,7 @@ static bool gen_load_rr_tl(DisasContext *ctx, arg_r *a, MemOp memop,
     tcg_gen_qemu_ld_tl(dest, addr, ctx->mem_idx, memop);
 
     gen_set_gpr(ctx, a->rd, dest);
-    if (postInc) {
+    if (postInc && (a->rd != a->rs1)) {
         TCGv src1 = get_gpr(ctx, a->rs1, EXT_NONE);
         TCGv src2 = get_gpr(ctx, a->rs2, EXT_NONE);
         tcg_gen_add_tl(src1, src1, src2);
