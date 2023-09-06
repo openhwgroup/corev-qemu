@@ -2118,7 +2118,7 @@ static bool trans_cv_abs(DisasContext *ctx, arg_cv_abs *a)
     return gen_unary(ctx, a, EXT_NONE, tcg_gen_abs_tl);
 }
 
-static bool trans_cv_slet(DisasContext *ctx, arg_cv_slet *a)
+static bool trans_cv_sle(DisasContext *ctx, arg_cv_sle *a)
 {
     REQUIRE_XCVALU(ctx);
     TCGv dest = dest_gpr(ctx, a->rd);
@@ -2130,7 +2130,7 @@ static bool trans_cv_slet(DisasContext *ctx, arg_cv_slet *a)
     return true;
 }
 
-static bool trans_cv_sletu(DisasContext *ctx, arg_cv_slet *a)
+static bool trans_cv_sleu(DisasContext *ctx, arg_cv_sleu *a)
 {
     REQUIRE_XCVALU(ctx);
     TCGv dest = dest_gpr(ctx, a->rd);
