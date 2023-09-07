@@ -485,6 +485,15 @@ static RISCVException seed(CPURISCVState *env, int csrno)
 #endif
 }
 
+static RISCVException hwlp(CPURISCVState *env, int csrno)
+{
+    if (env_archcpu(env)->cfg.ext_xcvhwlp) {
+        return RISCV_EXCP_NONE;
+    }
+
+    return RISCV_EXCP_ILLEGAL_INST;
+}
+
 /* User Floating-Point CSRs */
 static RISCVException read_fflags(CPURISCVState *env, int csrno,
                                   target_ulong *val)
@@ -3757,7 +3766,141 @@ static RISCVException rmw_seed(CPURISCVState *env, int csrno,
     if (ret_value) {
         *ret_value = rval;
     }
+    return RISCV_EXCP_NONE;
+}
 
+static inline void check_hwlp_valid(CPURISCVState *env)
+{
+    int i = 0;
+    for (int i = 0; i < 2; i++) {
+        if (env->hwlp[i].lpcount > 1) {
+            if (env->hwlp[i].lpend & 0x3 || env->hwlp[i].lpstart & 0x3) {
+                qemu_log_mask(LOG_GUEST_ERROR,
+                              "HWLoop%d: Start and End addresses of an HWLoop "
+                              "must be 32-bit aligned.", i);
+            }
+            if (env->hwlp[i].lpend <= env->hwlp[i].lpstart) {
+                qemu_log_mask(LOG_GUEST_ERROR,
+                              "HWLoop%d: End Address must be strictly greater "
+                              "than Start Address.", i);
+            }
+            if (env->hwlp[i].lpend - env->hwlp[i].lpstart < 12) {
+                qemu_log_mask(LOG_GUEST_ERROR,
+                              "HWLoop%d: HWLoop body must contain at least 3 "
+                              "instructions.", i);
+            }
+        }
+    }
+
+    if (env->hwlp[0].lpcount > 1 && env->hwlp[1].lpcount > 1 &&
+        (env->hwlp[1].lpend - env->hwlp[i].lpend < 8)) {
+        qemu_log_mask(LOG_GUEST_ERROR,
+                      "When both loops are nested, the End address of the "
+                      "outermost HWLoop (must be #1) must be at least 2 "
+                      "instructions further than the End address of the "
+                      "innermost HWLoop (must be #0).");
+    }
+}
+
+static inline void check_write_hwlp(CPURISCVState *env, int i)
+{
+    if (env->hwlp[i].lpcount > 1 && env->pc >= env->hwlp[i].lpstart &&
+        env->pc < env->hwlp[i].lpend) {
+        qemu_log_mask(LOG_GUEST_ERROR,
+                      "HWLoop %d: No HWLoop #0 (resp. #1) CSR should be "
+                      "modified inside the HWLoop #0 (resp. #1) body.", i);
+    }
+}
+
+static RISCVException read_lpstart0(CPURISCVState *env, int csrno,
+                                    target_ulong *val)
+{
+    *val = env->hwlp[0].lpstart;
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException write_lpstart0(CPURISCVState *env, int csrno,
+                                     target_ulong val)
+{
+    check_write_hwlp(env, 0);
+    env->hwlp[0].lpstart = val & (~0x3);
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException read_lpend0(CPURISCVState *env, int csrno,
+                                  target_ulong *val)
+{
+    *val = env->hwlp[0].lpend;
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException write_lpend0(CPURISCVState *env, int csrno,
+                                   target_ulong val)
+{
+    check_write_hwlp(env, 0);
+    env->hwlp[0].lpend = val & (~0x3);
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException read_lpcount0(CPURISCVState *env, int csrno,
+                                    target_ulong *val)
+{
+    *val = env->hwlp[0].lpcount;
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException write_lpcount0(CPURISCVState *env, int csrno,
+                                     target_ulong val)
+{
+    check_write_hwlp(env, 0);
+    env->hwlp[0].lpcount = val;
+    check_hwlp_valid(env);
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException read_lpstart1(CPURISCVState *env, int csrno,
+                                    target_ulong *val)
+{
+    *val = env->hwlp[1].lpstart;
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException write_lpstart1(CPURISCVState *env, int csrno,
+                                     target_ulong val)
+{
+    check_write_hwlp(env, 1);
+    env->hwlp[1].lpstart = val & (~0x3);
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException read_lpend1(CPURISCVState *env, int csrno,
+                                  target_ulong *val)
+{
+    *val = env->hwlp[1].lpend;
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException write_lpend1(CPURISCVState *env, int csrno,
+                                   target_ulong val)
+{
+    check_write_hwlp(env, 1);
+    env->hwlp[1].lpend = val & (~0x3);
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException read_lpcount1(CPURISCVState *env, int csrno,
+                                    target_ulong *val)
+{
+    *val = env->hwlp[1].lpcount;
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException write_lpcount1(CPURISCVState *env, int csrno,
+                                     target_ulong val)
+{
+    check_write_hwlp(env, 1);
+    env->hwlp[1].lpcount = val;
+    check_hwlp_valid(env);
     return RISCV_EXCP_NONE;
 }
 
@@ -4657,4 +4800,12 @@ riscv_csr_operations csr_ops[CSR_TABLE_SIZE] = {
                              .min_priv_ver = PRIV_VERSION_1_12_0 },
 
 #endif /* !CONFIG_USER_ONLY */
+
+    /* Custom CSRs */
+    [CSR_LPSTART0] =  { "lpstart0", hwlp,     read_lpstart0, write_lpstart0 },
+    [CSR_LPEND0]   =  { "lpend0",   hwlp,     read_lpend0,   write_lpend0   },
+    [CSR_LPCOUNT0] =  { "lpcount0", hwlp,     read_lpcount0, write_lpcount0 },
+    [CSR_LPSTART1] =  { "lpstart1", hwlp,     read_lpstart1, write_lpstart1 },
+    [CSR_LPEND1]   =  { "lpend1",   hwlp,     read_lpend1,   write_lpend1   },
+    [CSR_LPCOUNT1] =  { "lpcount1", hwlp,     read_lpcount1, write_lpcount1 },
 };

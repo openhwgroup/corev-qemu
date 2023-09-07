@@ -4,6 +4,7 @@ gen = [
   decodetree.process('insn32.decode', extra_args: '--static-decode=decode_insn32'),
   decodetree.process('xthead.decode', extra_args: '--static-decode=decode_xthead'),
   decodetree.process('XVentanaCondOps.decode', extra_args: '--static-decode=decode_XVentanaCodeOps'),
+  decodetree.process('xpulp.decode', extra_args: '--static-decode=decode_xpulp'),
 ]
 
 riscv_ss = ss.source_set()
@@ -14,6 +15,7 @@ riscv_ss.add(files(
   'csr.c',
   'fpu_helper.c',
   'gdbstub.c',
+  'xpulp_helper.c',
   'op_helper.c',
   'vector_helper.c',
   'bitmanip_helper.c',

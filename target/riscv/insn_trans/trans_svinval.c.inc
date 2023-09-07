@@ -37,6 +37,7 @@ static bool trans_sinval_vma(DisasContext *ctx, arg_sinval_vma *a)
 
 static bool trans_sfence_w_inval(DisasContext *ctx, arg_sfence_w_inval *a)
 {
+    check_hwlp_body(ctx, HWLP_TYPE_MEMORY_ORDER);
     REQUIRE_SVINVAL(ctx);
     REQUIRE_EXT(ctx, RVS);
     /* Do nothing currently */
@@ -45,6 +46,7 @@ static bool trans_sfence_w_inval(DisasContext *ctx, arg_sfence_w_inval *a)
 
 static bool trans_sfence_inval_ir(DisasContext *ctx, arg_sfence_inval_ir *a)
 {
+    check_hwlp_body(ctx, HWLP_TYPE_MEMORY_ORDER);
     REQUIRE_SVINVAL(ctx);
     REQUIRE_EXT(ctx, RVS);
     /* Do nothing currently */
