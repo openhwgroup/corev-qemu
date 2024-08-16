@@ -129,3 +129,153 @@ target_ulong HELPER(xperm8)(target_ulong rs1, target_ulong rs2)
 {
     return do_xperm(rs1, rs2, 3);
 }
+
+target_ulong HELPER(cv_bitrev)(target_ulong rs1, target_ulong is2, target_ulong is3)
+{
+    // Shift the input value right by is2 bits
+    rs1 >>= is2;
+
+    // Determine the group size based on is3
+    int group_size;
+    switch (is3) {
+        case 0:
+            group_size = 1;
+            break;
+        case 1:
+            group_size = 2;
+            break;
+        case 2:
+            group_size = 3;
+            break;
+        default:
+            group_size = 1; // Default case, should not occur
+    }
+
+    uint32_t result = 0;
+
+    for (int i = 0; i < 32; i += group_size) {
+        uint32_t chunk = (rs1 >> i) & ((1 << group_size) - 1);
+        for (int j = 0; j < group_size; j++) {
+            result |= ((chunk >> j) & 1) << (i + group_size - 1 - j);
+        }
+    }
+
+    return result;
+}
+
+target_ulong HELPER(cv_extract)(target_ulong rs1, target_ulong is2, target_ulong is3) {
+    // Extract the required bits and sign-extend
+    target_ulong mask = ((1ULL << (is3 + 1)) - 1) << is2;
+    target_ulong extracted = (rs1 & mask) >> is2;
+    return (int64_t)extracted << (64 - (is3 + 1)) >> (64 - (is3 + 1)); // Sign-extend
+}
+
+target_ulong HELPER(cv_extractu)(target_ulong rs1, target_ulong is2, target_ulong is3) {
+    // Extract the required bits and zero-extend
+    target_ulong mask = ((1ULL << (is3 + 1)) - 1) << is2;
+    return (rs1 & mask) >> is2;
+}
+
+target_ulong HELPER(cv_extractr)(target_ulong rs1, target_ulong rs2) {
+    target_ulong high_offset = (rs2 >> 5) & 0x1F;
+    target_ulong low_offset = rs2 & 0x1F;
+    target_ulong end_offset = high_offset + low_offset;
+    target_ulong mask = ((1ULL << (end_offset + 1)) - 1) << low_offset;
+    target_ulong extracted = (rs1 & mask) >> low_offset;
+    return (int64_t)extracted << (64 - (end_offset + 1)) >> (64 - (end_offset + 1)); // Sign-extend
+}
+
+target_ulong HELPER(cv_extractur)(target_ulong rs1, target_ulong rs2) {
+    target_ulong high_offset = (rs2 >> 5) & 0x1F;
+    target_ulong low_offset = rs2 & 0x1F;
+    target_ulong end_offset = high_offset + low_offset;
+    target_ulong mask = ((1ULL << (end_offset + 1)) - 1) << low_offset;
+    return (rs1 & mask) >> low_offset;
+}
+
+target_ulong HELPER(cv_insert)(target_ulong rs1, target_ulong is2, target_ulong is3) {
+    if(is2 + is3 >= 32){
+        error_report("Is3 + Is2 must be < 32");
+        exit(EXIT_FAILURE);
+    }
+    target_ulong mask = ((1ULL << (is3 + 1)) - 1);
+    target_ulong value = (rs1 & mask) << is2;
+    target_ulong clear_mask = ~(((1ULL << (is3 + 1)) - 1) << is2);
+    return (clear_mask | value);
+}
+
+target_ulong HELPER(cv_insertr)(target_ulong rs1, target_ulong rs2) {
+    target_ulong mask = ((1ULL << (rs2 + 1)) - 1) << (rs2 & 0x1F);
+    target_ulong value = (rs1 & mask) >> (rs2 & 0x1F);
+    target_ulong clear_mask = ~((1ULL << (rs2 + 1)) - 1);
+    return (clear_mask | value);
+}
+
+target_ulong HELPER(cv_bclr)(target_ulong rs1, target_ulong is2, target_ulong is3) {
+    target_ulong mask = ((1ULL << (is3 + 1)) - 1) << is2;
+    return rs1 & ~mask;
+}
+
+target_ulong HELPER(cv_bclrr)(target_ulong rs1, target_ulong rs2) {
+    target_ulong high_offset = (rs2 >> 5) & 0x1F;
+    target_ulong low_offset = rs2 & 0x1F;
+    target_ulong end_offset = high_offset + low_offset;
+    target_ulong mask = ((1ULL << (end_offset + 1)) - 1) << low_offset;
+    return rs1 & ~mask;
+}
+
+target_ulong HELPER(cv_bset)(target_ulong rs1, target_ulong is2, target_ulong is3) {
+    target_ulong mask = ((1ULL << (is3 + 1)) - 1) << is2;
+    return rs1 | mask;
+}
+
+target_ulong HELPER(cv_bsetr)(target_ulong rs1, target_ulong rs2) {
+    target_ulong high_offset = (rs2 >> 5) & 0x1F;
+    target_ulong low_offset = rs2 & 0x1F;
+    target_ulong end_offset = high_offset + low_offset;
+    target_ulong mask = ((1ULL << (end_offset + 1)) - 1) << low_offset;
+    return rs1 | mask;
+}
+
+target_ulong HELPER(cv_ff1)(target_ulong rs1) {
+    if (rs1 == 0) return 32;
+    int pos = 31;
+    while ((rs1 & (1ULL << pos)) == 0) {
+        pos--;
+    }
+    return pos;
+}
+
+target_ulong HELPER(cv_fl1)(target_ulong rs1) {
+    if (rs1 == 0) return 32;
+    int pos = 0;
+    while ((rs1 & (1ULL << pos)) == 0) {
+        pos++;
+    }
+    return pos;
+}
+
+target_ulong HELPER(cv_clb)(target_ulong rs1) {
+    if (rs1 == 0) return 0;
+    int count = 0;
+    while ((rs1 & (1ULL << 31)) == 0) {
+        count++;
+        rs1 <<= 1;
+    }
+    return count;
+}
+
+target_ulong HELPER(cv_cnt)(target_ulong rs1) {
+    if (rs1 == 0) return 0;
+    int count = 0;
+    while (rs1) {
+        count += (rs1 & 1);
+        rs1 >>= 1;
+    }
+    return count;
+}
+
+target_ulong HELPER(cv_ror)(target_ulong rs1, target_ulong rs2) {
+    int shift = rs2 & 0x1F;
+    return (rs1 >> shift) | (rs1 << (32 - shift));
+}

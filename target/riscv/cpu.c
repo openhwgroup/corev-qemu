@@ -203,6 +203,7 @@ const RISCVIsaExtData isa_edata_arr[] = {
     ISA_EXT_DATA_ENTRY(xtheadsync, PRIV_VERSION_1_11_0, ext_xtheadsync),
     ISA_EXT_DATA_ENTRY(xventanacondops, PRIV_VERSION_1_12_0, ext_XVentanaCondOps),
     ISA_EXT_DATA_ENTRY(xcvmem, PRIV_VERSION_1_12_0, ext_xcvmem),
+    ISA_EXT_DATA_ENTRY(xcvbi, PRIV_VERSION_1_12_0, ext_xcvbi),
 
     DEFINE_PROP_END_OF_LIST(),
 };
@@ -1569,6 +1570,7 @@ const RISCVCPUMultiExtConfig riscv_cpu_vendor_exts[] = {
     MULTI_EXT_CFG_BOOL("xventanacondops", ext_XVentanaCondOps, false),
 
     MULTI_EXT_CFG_BOOL("xcvmem", ext_xcvmem, true),
+    MULTI_EXT_CFG_BOOL("xcvbi", ext_xcvbi, true),
 
     DEFINE_PROP_END_OF_LIST(),
 };

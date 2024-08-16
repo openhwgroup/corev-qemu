@@ -1109,7 +1109,9 @@ static uint32_t opcode_at(DisasContextBase *dcbase, target_ulong pc)
 #include "decode-xthead.c.inc"
 #include "insn_trans/trans_xthead.c.inc"
 #include "insn_trans/trans_xventanacondops.c.inc"
+#include "decode-xcv.c.inc"
 #include "insn_trans/trans_xcvmem.c.inc"
+#include "insn_trans/trans_xcvbi.c.inc"
 
 /* Include the auto-generated decoder for 16 bit insn */
 #include "decode-insn16.c.inc"
@@ -1138,6 +1140,7 @@ static void decode_opc(CPURISCVState *env, DisasContext *ctx, uint16_t opcode)
     } decoders[] = {
         { always_true_p,  decode_insn32 },
         { has_xthead_p, decode_xthead },
+        { has_xcv_p, decode_xcv },
         { has_XVentanaCondOps_p,  decode_XVentanaCodeOps },
     };
 

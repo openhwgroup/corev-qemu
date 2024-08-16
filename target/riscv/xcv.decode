@@ -1,0 +1,68 @@
+#
+# Translation routines for the instructions of the XCV* ISA extensions
+#
+# Copyright (c) 2024 OPENHW group with PLCT lab
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# The documentation of the ISA extensions can be found here:
+#   https://docs.openhwgroup.org/projects/cv32e40p-user-manual/en/cv32e40p_v1.8.3/index.html
+
+# Fields:
+%rs2       20:5
+%rs1       15:5
+%rd        7:5
+
+# imm
+%imm_i    20:s12
+%imm_s    25:s7 7:5
+%imm_l2   25:2
+%imm_l5   20:5
+%imm_r5   25:5
+
+# Argument sets
+&i       imm rs1 rd      !extern
+&r       rd  rs1 rs2     !extern
+&s       imm rs1 rs2     !extern
+&rev       limm2 limm5 rs1 rd
+&xcvb         rimm5 limm5 rs1 rd
+&r1rd      rs1 rd
+
+# Formats:
+@r       .......   ..... ..... ... ..... ....... &r                %rs2 %rs1 %rd
+@i       ............    ..... ... ..... ....... &i      imm=%imm_i     %rs1 %rd
+@s       .......   ..... ..... ... ..... ....... &s      imm=%imm_s %rs2 %rs1
+
+@rev ..... .. ..... ..... ... ..... ....... &rev limm2=%imm_l2 limm5=%imm_l5 %rs1 %rd
+@xcvb .. ..... ..... ..... ... ..... ....... &xcvb rimm5=%imm_r5 limm5=%imm_l5 %rs1 %rd
+@r1rd ....... ..... ..... ... ..... ....... &r1rd %rs1 %rd
+
+# *** CORE-V Instruction Set Custom Load&Store Extensions ***
+cv_lb    ............ ..... 000 ..... 0001011 @i
+cv_lbu   ............ ..... 100 ..... 0001011 @i
+cv_lh    ............ ..... 001 ..... 0001011 @i
+cv_lhu   ............ ..... 101 ..... 0001011 @i
+cv_lw    ............ ..... 010 ..... 0001011 @i
+cv_sb    .......  .....   ..... 000 ..... 0101011 @s
+cv_sh    .......  .....   ..... 001 ..... 0101011 @s
+cv_sw    .......  .....   ..... 010 ..... 0101011 @s
+cv_elw   ............ ..... 011 ..... 0001011 @i
+
+# *** CORE-V Instruction Set Custom XCVbitmanip Extension ***
+cv_bitrev    11000 .. ..... ..... 001 ..... 1011011 @rev
+cv_extract   00 ..... ..... ..... 000 ..... 1011011 @xcvb
+cv_extractu  01 ..... ..... ..... 000 ..... 1011011 @xcvb
+cv_insert    10 ..... ..... ..... 000 ..... 1011011 @xcvb
+cv_bclr      00 ..... ..... ..... 001 ..... 1011011 @xcvb
+cv_bset      01 ..... ..... ..... 001 ..... 1011011 @xcvb
+ 
+cv_extractr   0011000 ..... ..... 011 ..... 0101011 @r
+cv_extractur  0011001 ..... ..... 011 ..... 0101011 @r
+cv_insertr    0011010 ..... ..... 011 ..... 0101011 @r
+cv_bclrr      0011100 ..... ..... 011 ..... 0101011 @r
+cv_bsetr      0011101 ..... ..... 011 ..... 0101011 @r
+cv_ror        0100000 ..... ..... 011 ..... 0101011 @r
+cv_ff1        0100001 00000 ..... 011 ..... 0101011 @r1rd
+cv_fl1        0100010 00000 ..... 011 ..... 0101011 @r1rd
+cv_clb        0100011 00000 ..... 011 ..... 0101011 @r1rd
+cv_cnt        0100100 00000 ..... 011 ..... 0101011 @r1rd
