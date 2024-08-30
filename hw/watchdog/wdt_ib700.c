@@ -30,7 +30,7 @@
 /*#define IB700_DEBUG 1*/
 
 #ifdef IB700_DEBUG
-#define ib700_debug(fs,...)					\
+#define ib700_debug(fs,...)                                    \
     fprintf(stderr,"ib700: %s: "fs,__func__,##__VA_ARGS__)
 #else
 #define ib700_debug(fs,...)
@@ -95,7 +95,7 @@ static const VMStateDescription vmstate_ib700 = {
     .name = "ib700_wdt",
     .version_id = 0,
     .minimum_version_id = 0,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_TIMER_PTR(timer, IB700State),
         VMSTATE_END_OF_LIST()
     }

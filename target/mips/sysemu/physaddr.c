@@ -70,8 +70,7 @@ static int is_seg_am_mapped(unsigned int am, bool eu, int mmu_idx)
         /* is this AM mapped in current execution mode */
         return ((adetlb_mask << am) < 0);
     default:
-        assert(0);
-        return TLBRET_BADADDR;
+        g_assert_not_reached();
     };
 }
 
@@ -231,13 +230,12 @@ int get_physical_address(CPUMIPSState *env, hwaddr *physical,
 
 hwaddr mips_cpu_get_phys_page_debug(CPUState *cs, vaddr addr)
 {
-    MIPSCPU *cpu = MIPS_CPU(cs);
-    CPUMIPSState *env = &cpu->env;
+    CPUMIPSState *env = cpu_env(cs);
     hwaddr phys_addr;
     int prot;
 
     if (get_physical_address(env, &phys_addr, &prot, addr, MMU_DATA_LOAD,
-                             cpu_mmu_index(env, false)) != 0) {
+                             mips_env_mmu_index(env)) != 0) {
         return -1;
     }
     return phys_addr;

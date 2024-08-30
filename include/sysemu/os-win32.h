@@ -29,6 +29,7 @@
 #include <winsock2.h>
 #include <windows.h>
 #include <ws2tcpip.h>
+#include "qemu/typedefs.h"
 
 #ifdef HAVE_AFUNIX_H
 #include <afunix.h>
@@ -65,8 +66,8 @@ extern "C" {
  * setjmp to _setjmpex instead. However, they are still defined in libmingwex.a,
  * which gets linked automatically.
  */
-extern int __mingw_setjmp(jmp_buf);
-extern void __attribute__((noreturn)) __mingw_longjmp(jmp_buf, int);
+int __mingw_setjmp(jmp_buf);
+void __attribute__((noreturn)) __mingw_longjmp(jmp_buf, int);
 #define setjmp(env) __mingw_setjmp(env)
 #define longjmp(env, val) __mingw_longjmp(env, val)
 #elif defined(_WIN64)
@@ -100,7 +101,6 @@ static inline void os_setup_signal_handling(void) {}
 static inline void os_daemonize(void) {}
 static inline void os_setup_post(void) {}
 static inline void os_set_proc_name(const char *dummy) {}
-static inline int os_parse_cmd_args(int index, const char *optarg) { return -1; }
 void os_set_line_buffering(void);
 void os_setup_early_signal_handling(void);
 
@@ -126,6 +126,11 @@ static inline bool is_daemonized(void)
 static inline int os_mlock(void)
 {
     return -ENOSYS;
+}
+
+static inline void os_setup_limits(void)
+{
+    return;
 }
 
 #define fsync _commit
@@ -164,9 +169,30 @@ static inline void qemu_funlockfile(FILE *f)
 #endif
 }
 
-/* We wrap all the sockets functions so that we can
- * set errno based on WSAGetLastError()
+/* Helper for WSAEventSelect, to report errors */
+bool qemu_socket_select(int sockfd, WSAEVENT hEventObject,
+                        long lNetworkEvents, Error **errp);
+
+bool qemu_socket_unselect(int sockfd, Error **errp);
+
+/* We wrap all the sockets functions so that we can set errno based on
+ * WSAGetLastError(), and use file-descriptors instead of SOCKET.
  */
+
+/*
+ * qemu_close_socket_osfhandle:
+ * @fd: a file descriptor associated with a SOCKET
+ *
+ * Close only the C run-time file descriptor, leave the SOCKET opened.
+ *
+ * Returns zero on success. On error, -1 is returned, and errno is set to
+ * indicate the error.
+ */
+int qemu_close_socket_osfhandle(int fd);
+
+#undef close
+#define close qemu_close_wrap
+int qemu_close_wrap(int fd);
 
 #undef connect
 #define connect qemu_connect_wrap
@@ -198,10 +224,6 @@ int qemu_shutdown_wrap(int sockfd, int how);
 #undef ioctlsocket
 #define ioctlsocket qemu_ioctlsocket_wrap
 int qemu_ioctlsocket_wrap(int fd, int req, void *val);
-
-#undef closesocket
-#define closesocket qemu_closesocket_wrap
-int qemu_closesocket_wrap(int fd);
 
 #undef getsockopt
 #define getsockopt qemu_getsockopt_wrap
@@ -240,6 +262,13 @@ ssize_t qemu_recv_wrap(int sockfd, void *buf, size_t len, int flags);
 #define recvfrom qemu_recvfrom_wrap
 ssize_t qemu_recvfrom_wrap(int sockfd, void *buf, size_t len, int flags,
                            struct sockaddr *addr, socklen_t *addrlen);
+
+EXCEPTION_DISPOSITION
+win32_close_exception_handler(struct _EXCEPTION_RECORD*, void*,
+                              struct _CONTEXT*, void*);
+
+void *qemu_win32_map_alloc(size_t size, HANDLE *h, Error **errp);
+void qemu_win32_map_free(void *ptr, HANDLE h, Error **errp);
 
 #ifdef __cplusplus
 }

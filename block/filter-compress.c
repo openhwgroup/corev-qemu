@@ -36,6 +36,8 @@ static int compress_open(BlockDriverState *bs, QDict *options, int flags,
         return ret;
     }
 
+    GRAPH_RDLOCK_GUARD_MAINLOOP();
+
     if (!bs->file->bs->drv || !block_driver_can_compress(bs->file->bs->drv)) {
         error_setg(errp,
                    "Compression is not supported for underlying format: %s",
@@ -97,7 +99,8 @@ compress_co_pdiscard(BlockDriverState *bs, int64_t offset, int64_t bytes)
 }
 
 
-static void compress_refresh_limits(BlockDriverState *bs, Error **errp)
+static void GRAPH_RDLOCK
+compress_refresh_limits(BlockDriverState *bs, Error **errp)
 {
     BlockDriverInfo bdi;
     int ret;
@@ -146,7 +149,6 @@ static BlockDriver bdrv_compress = {
     .bdrv_co_eject                      = compress_co_eject,
     .bdrv_co_lock_medium                = compress_co_lock_medium,
 
-    .has_variable_length                = true,
     .is_filter                          = true,
 };
 

@@ -9,7 +9,7 @@
 
 #include "qemu/osdep.h"
 #include "sysemu/watchdog.h"
-#include "hw/i386/ich9.h"
+#include "hw/southbridge/ich9.h"
 #include "migration/vmstate.h"
 
 #include "hw/acpi/ich9_tco.h"
@@ -254,7 +254,7 @@ const VMStateDescription vmstate_tco_io_sts = {
     .name = "tco io device status",
     .version_id = 1,
     .minimum_version_id = 1,
-    .fields      = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_UINT16(tco.rld, TCOIORegs),
         VMSTATE_UINT8(tco.din, TCOIORegs),
         VMSTATE_UINT8(tco.dout, TCOIORegs),

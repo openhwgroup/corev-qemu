@@ -35,8 +35,9 @@
 #include "hw/block/flash.h"
 #include "sysemu/qtest.h"
 #include "exec/address-spaces.h"
-#include "cpu.h"
 #include "qemu/cutils.h"
+#include "qemu/error-report.h"
+
 
 /*****************************************************************************/
 /* Siemens SX1 Cellphone V1 */

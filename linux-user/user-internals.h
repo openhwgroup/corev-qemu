@@ -20,6 +20,7 @@
 
 #include "exec/user/thunk.h"
 #include "exec/exec-all.h"
+#include "exec/tb-flush.h"
 #include "qemu/log.h"
 
 extern char *exec_path;
@@ -70,24 +71,24 @@ const char *target_strerror(int err);
 int get_osversion(void);
 void init_qemu_uname_release(void);
 void fork_start(void);
-void fork_end(int child);
+void fork_end(pid_t pid);
 
 /**
  * probe_guest_base:
  * @image_name: the executable being loaded
- * @loaddr: the lowest fixed address in the executable
- * @hiaddr: the highest fixed address in the executable
+ * @loaddr: the lowest fixed address within the executable
+ * @hiaddr: the highest fixed address within the executable
  *
  * Creates the initial guest address space in the host memory space.
  *
- * If @loaddr == 0, then no address in the executable is fixed,
- * i.e. it is fully relocatable.  In that case @hiaddr is the size
- * of the executable.
+ * If @loaddr == 0, then no address in the executable is fixed, i.e.
+ * it is fully relocatable.  In that case @hiaddr is the size of the
+ * executable minus one.
  *
  * This function will not return if a valid value for guest_base
  * cannot be chosen.  On return, the executable loader can expect
  *
- *    target_mmap(loaddr, hiaddr - loaddr, ...)
+ *    target_mmap(loaddr, hiaddr - loaddr + 1, ...)
  *
  * to succeed.
  */

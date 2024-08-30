@@ -36,7 +36,8 @@
 
 bool riscv_is_32bit(RISCVHartArrayState *harts)
 {
-    return harts->harts[0].env.misa_mxl_max == MXL_RV32;
+    RISCVCPUClass *mcc = RISCV_CPU_GET_CLASS(&harts->harts[0]);
+    return mcc->misa_mxl_max == MXL_RV32;
 }
 
 /*
@@ -173,43 +174,7 @@ target_ulong riscv_load_firmware(const char *firmware_filename,
     exit(1);
 }
 
-target_ulong riscv_load_kernel(MachineState *machine,
-                               target_ulong kernel_start_addr,
-                               symbol_fn_t sym_cb)
-{
-    const char *kernel_filename = machine->kernel_filename;
-    uint64_t kernel_load_base, kernel_entry;
-
-    g_assert(kernel_filename != NULL);
-
-    /*
-     * NB: Use low address not ELF entry point to ensure that the fw_dynamic
-     * behaviour when loading an ELF matches the fw_payload, fw_jump and BBL
-     * behaviour, as well as fw_dynamic with a raw binary, all of which jump to
-     * the (expected) load address load address. This allows kernels to have
-     * separate SBI and ELF entry points (used by FreeBSD, for example).
-     */
-    if (load_elf_ram_sym(kernel_filename, NULL, NULL, NULL,
-                         NULL, &kernel_load_base, NULL, NULL, 0,
-                         EM_RISCV, 1, 0, NULL, true, sym_cb) > 0) {
-        return kernel_load_base;
-    }
-
-    if (load_uimage_as(kernel_filename, &kernel_entry, NULL, NULL,
-                       NULL, NULL, NULL) > 0) {
-        return kernel_entry;
-    }
-
-    if (load_image_targphys_as(kernel_filename, kernel_start_addr,
-                               current_machine->ram_size, NULL) > 0) {
-        return kernel_start_addr;
-    }
-
-    error_report("could not load kernel '%s'", kernel_filename);
-    exit(1);
-}
-
-void riscv_load_initrd(MachineState *machine, uint64_t kernel_entry)
+static void riscv_load_initrd(MachineState *machine, uint64_t kernel_entry)
 {
     const char *filename = machine->initrd_filename;
     uint64_t mem_size = machine->ram_size;
@@ -224,13 +189,13 @@ void riscv_load_initrd(MachineState *machine, uint64_t kernel_entry)
      * kernel is uncompressed it will not clobber the initrd. However
      * on boards without much RAM we must ensure that we still leave
      * enough room for a decent sized initrd, and on boards with large
-     * amounts of RAM we must avoid the initrd being so far up in RAM
-     * that it is outside lowmem and inaccessible to the kernel.
-     * So for boards with less  than 256MB of RAM we put the initrd
-     * halfway into RAM, and for boards with 256MB of RAM or more we put
-     * the initrd at 128MB.
+     * amounts of RAM, we put the initrd at 512MB to allow large kernels
+     * to boot.
+     * So for boards with less than 1GB of RAM we put the initrd
+     * halfway into RAM, and for boards with 1GB of RAM or more we put
+     * the initrd at 512MB.
      */
-    start = kernel_entry + MIN(mem_size / 2, 128 * MiB);
+    start = kernel_entry + MIN(mem_size / 2, 512 * MiB);
 
     size = load_ramdisk(filename, start, mem_size - start);
     if (size == -1) {
@@ -247,6 +212,67 @@ void riscv_load_initrd(MachineState *machine, uint64_t kernel_entry)
         qemu_fdt_setprop_cell(fdt, "/chosen", "linux,initrd-start", start);
         qemu_fdt_setprop_cell(fdt, "/chosen", "linux,initrd-end", end);
     }
+}
+
+target_ulong riscv_load_kernel(MachineState *machine,
+                               RISCVHartArrayState *harts,
+                               target_ulong kernel_start_addr,
+                               bool load_initrd,
+                               symbol_fn_t sym_cb)
+{
+    const char *kernel_filename = machine->kernel_filename;
+    uint64_t kernel_load_base, kernel_entry;
+    void *fdt = machine->fdt;
+
+    g_assert(kernel_filename != NULL);
+
+    /*
+     * NB: Use low address not ELF entry point to ensure that the fw_dynamic
+     * behaviour when loading an ELF matches the fw_payload, fw_jump and BBL
+     * behaviour, as well as fw_dynamic with a raw binary, all of which jump to
+     * the (expected) load address load address. This allows kernels to have
+     * separate SBI and ELF entry points (used by FreeBSD, for example).
+     */
+    if (load_elf_ram_sym(kernel_filename, NULL, NULL, NULL,
+                         NULL, &kernel_load_base, NULL, NULL, 0,
+                         EM_RISCV, 1, 0, NULL, true, sym_cb) > 0) {
+        kernel_entry = kernel_load_base;
+        goto out;
+    }
+
+    if (load_uimage_as(kernel_filename, &kernel_entry, NULL, NULL,
+                       NULL, NULL, NULL) > 0) {
+        goto out;
+    }
+
+    if (load_image_targphys_as(kernel_filename, kernel_start_addr,
+                               current_machine->ram_size, NULL) > 0) {
+        kernel_entry = kernel_start_addr;
+        goto out;
+    }
+
+    error_report("could not load kernel '%s'", kernel_filename);
+    exit(1);
+
+out:
+    /*
+     * For 32 bit CPUs 'kernel_entry' can be sign-extended by
+     * load_elf_ram_sym().
+     */
+    if (riscv_is_32bit(harts)) {
+        kernel_entry = extract64(kernel_entry, 0, 32);
+    }
+
+    if (load_initrd && machine->initrd_filename) {
+        riscv_load_initrd(machine, kernel_entry);
+    }
+
+    if (fdt && machine->kernel_cmdline && *machine->kernel_cmdline) {
+        qemu_fdt_setprop_string(fdt, "/chosen", "bootargs",
+                                machine->kernel_cmdline);
+    }
+
+    return kernel_entry;
 }
 
 /*
@@ -389,7 +415,7 @@ void riscv_setup_rom_reset_vec(MachineState *machine, RISCVHartArrayState *harts
         reset_vec[4] = 0x0182b283;   /*     ld     t0, 24(t0) */
     }
 
-    if (!harts->harts[0].cfg.ext_icsr) {
+    if (!harts->harts[0].cfg.ext_zicsr) {
         /*
          * The Zicsr extension has been disabled, so let's ensure we don't
          * run the CSR instruction. Let's fill the address with a non
