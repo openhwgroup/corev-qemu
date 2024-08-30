@@ -1111,7 +1111,7 @@ static uint32_t opcode_at(DisasContextBase *dcbase, target_ulong pc)
 #include "insn_trans/trans_xventanacondops.c.inc"
 #include "decode-xcv.c.inc"
 #include "insn_trans/trans_xcvmem.c.inc"
-#include "insn_trans/trans_xcvbi.c.inc"
+#include "insn_trans/trans_xcvbitmanip.c.inc"
 
 /* Include the auto-generated decoder for 16 bit insn */
 #include "decode-insn16.c.inc"

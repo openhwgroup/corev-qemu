@@ -151,7 +151,7 @@ struct RISCVCPUConfig {
     bool ext_xtheadsync;
     bool ext_XVentanaCondOps;
     bool ext_xcvmem;
-    bool ext_xcvbi;
+    bool ext_xcvbitmanip;
 
     uint32_t pmu_mask;
     uint16_t vlenb;
@@ -194,7 +194,7 @@ static inline bool has_xthead_p(const RISCVCPUConfig *cfg)
 
 static inline bool has_xcv_p(const RISCVCPUConfig *cfg)
 {
-    return cfg->ext_xcvmem || cfg->ext_xcvbi;
+    return cfg->ext_xcvmem || cfg->ext_xcvbitmanip;
 }
 
 #define MATERIALISE_EXT_PREDICATE(ext) \
